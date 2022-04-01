@@ -2,6 +2,40 @@
 
 Dataset: https://www.kaggle.com/competitions/tensorflow-great-barrier-reef/overview
 
-## Project Structure
+Let's work with prototypes in the `prototypes` folder and follow the following
+architecture for the final project.
 
-Keep ipython notebooks in prototypes/, real code in the rest of the project
+### Some Helpful links:
+
+- https://www.tensorflow.org/guide/data
+- https://keras.io/examples/vision/retinanet/
+- https://albumentations.ai/docs/getting_started/bounding_boxes_augmentation/
+- https://pyimagesearch.com/2020/10/05/object-detection-bounding-box-regression-with-keras-tensorflow-and-deep-learning/
+
+# Project Structure
+The project should be structured as follows:
+
+- the `data_loader` module loads the data.
+- `preprocess` augments the data.
+- `model` contains the modeling code.
+- `visualize` module to perform visualization.
+- a main driver `train.py` puts it all together to train the model.
+
+### Data Loader
+
+The data_loader should take the `.csv` file distributed with the Kaggle dataset and load
+a dataset into a `tf.data.Dataset` object.  This data pipeline tends to be pretty nice
+to work with and very easy to distribute/parallelize which will save us time in the
+long run.
+
+Harsh can give this a try.
+
+### Preprocess
+
+We can use the `albumnations` library to augment images with bounding boxes.
+
+Recommended reading:
+
+- https://albumentations.ai/docs/getting_started/bounding_boxes_augmentation/
+
+###
