@@ -5,12 +5,14 @@ Dataset: https://www.kaggle.com/competitions/tensorflow-great-barrier-reef/overv
 Let's work with prototypes in the `prototypes` folder and follow the following
 architecture for the final project.
 
+
 ### Some Helpful links:
 
 - https://www.tensorflow.org/guide/data
-- https://keras.io/examples/vision/retinanet/
+- [RetinaNet in Keras](https://keras.io/examples/vision/retinanet)
 - https://albumentations.ai/docs/getting_started/bounding_boxes_augmentation/
 - https://pyimagesearch.com/2020/10/05/object-detection-bounding-box-regression-with-keras-tensorflow-and-deep-learning/
+- [Another sample Keras object detection model (Yolov3) - very old code](https://github.com/8000net/YOLOv3)
 
 # Project Structure
 The project should be structured as follows:
