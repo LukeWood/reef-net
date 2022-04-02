@@ -16,5 +16,14 @@ setup(
     url="https://github.com/lukewood/augmentation-aware-contrastive-learning",
     author="Luke Wood, Sandra Villamar, Harsh Thakur",
     author_email="lukewoodcs@gmail.com",
-    install_requires=["tensorflow", "absl-py", "tensorflow_datasets", "ml_collections", "wandb"],
+    install_requires=[
+        "black",
+        "isort",
+        "flake8",
+        "tensorflow",
+        "absl-py",
+        "tensorflow_datasets",
+        "ml_collections",
+        "wandb",
+    ],
 )

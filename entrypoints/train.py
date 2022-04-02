@@ -1,7 +1,8 @@
-
-from absl import app, flags, logging
-from ml_collections.config_flags import config_flags
 import wandb
+from absl import app
+from absl import flags
+from absl import logging
+from ml_collections.config_flags import config_flags
 
 FLAGS = flags.FLAGS
 
@@ -9,6 +10,7 @@ FLAGS = flags.FLAGS
 config_flags.DEFINE_config_file("config")
 flags.DEFINE_bool("wandb", False, "Whether to run to wandb")
 flags.DEFINE_string("artifact_dir", None, "Directory to store artifacts")
+
 
 def get_dataset(config):
     if config.dataset == "cifar10":
@@ -33,9 +35,7 @@ def main(args):
 
     if FLAGS.wandb:
         wandb.init(
-            project=config.wandb_project_name,
-            entity="aacl",
-            config=config.to_dict()
+            project=config.wandb_project_name, entity="aacl", config=config.to_dict()
         )
 
 
