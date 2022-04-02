@@ -14,7 +14,18 @@ architecture for the final project.
 - https://pyimagesearch.com/2020/10/05/object-detection-bounding-box-regression-with-keras-tensorflow-and-deep-learning/
 - [Another sample Keras object detection model (Yolov3) - very old code](https://github.com/8000net/YOLOv3)
 
+## Development
+
+To get up in and running, you should run:
+
+```python
+python setup.py develop
+```
+
+This will install all of the dependencies and get you up and running.
+
 # Project Structure
+
 The project should be structured as follows:
 
 - the `data_loader` module loads the data.
@@ -22,6 +33,15 @@ The project should be structured as follows:
 - `model` contains the modeling code.
 - `visualize` module to perform visualization.
 - a main driver `train.py` puts it all together to train the model.
+
+Everything should live in the `reef-net` package except for `train.py`.
+
+### train.py
+
+train.py serves as the training entrypoint.  Some important notes:
+
+- config is handled by the `ml_collections` library instead of command line flags
+- experiment tracking should be done through [WAndB.ai](wandb.ai).  I'll create a project for this and set everyone up.  It makes tracking experiments much easier.
 
 ### Data Loader
 
