@@ -1,17 +1,16 @@
-# Coral Reef Object Detection
+# ReefNet
 
 Dataset: https://www.kaggle.com/competitions/tensorflow-great-barrier-reef/overview
 
 Let's work with prototypes in the `prototypes` folder and follow the following
 architecture for the final project.
 
-
 ### Some Helpful links:
 
-- https://www.tensorflow.org/guide/data
+- [tf.data package overview](https://www.tensorflow.org/guide/data)
 - [RetinaNet in Keras](https://keras.io/examples/vision/retinanet)
-- https://albumentations.ai/docs/getting_started/bounding_boxes_augmentation/
-- https://pyimagesearch.com/2020/10/05/object-detection-bounding-box-regression-with-keras-tensorflow-and-deep-learning/
+- [albumnations bounding box augmentations](https://albumentations.ai/docs/getting_started/bounding_boxes_augmentation/)
+- [RetinaNet Keras implementation](https://pyimagesearch.com/2020/10/05/object-detection-bounding-box-regression-with-keras-tensorflow-and-deep-learning/)
 - [Another sample Keras object detection model (Yolov3) - very old code](https://github.com/8000net/YOLOv3)
 
 ## Development
@@ -59,5 +58,3 @@ We can use the `albumnations` library to augment images with bounding boxes.
 Recommended reading:
 
 - https://albumentations.ai/docs/getting_started/bounding_boxes_augmentation/
-
-###
