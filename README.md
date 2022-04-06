@@ -2,7 +2,7 @@
 
 <br/>
 
-![Demo image with bounding boxes](media/demo_image.png)
+<img src="media/demo_image.png" width="400x"/>
 
 Dataset: https://www.kaggle.com/competitions/tensorflow-great-barrier-reef/overview
 
