@@ -12,10 +12,14 @@ architecture for the final project.
 ### Some Helpful links:
 
 - [tf.data package overview](https://www.tensorflow.org/guide/data)
+- [albumenations bounding box augmentations](https://albumentations.ai/docs/getting_started/bounding_boxes_augmentation/)
+
 - [RetinaNet in Keras](https://keras.io/examples/vision/retinanet)
-- [albumnations bounding box augmentations](https://albumentations.ai/docs/getting_started/bounding_boxes_augmentation/)
 - [RetinaNet Keras implementation](https://pyimagesearch.com/2020/10/05/object-detection-bounding-box-regression-with-keras-tensorflow-and-deep-learning/)
-- [https://www.kaggle.com/code/soumikrakshit/yolo-v3-using-tensorflow-2-0/data](Yolov3 in TensorFlow)
+
+- [YOLO v3 in TensorFLow] (https://www.kaggle.com/code/soumikrakshit/yolo-v3-using-tensorflow-2-0/notebook#YOLO-Loss)
+- [YOLO v4] (https://github.com/yuto3o/yolox/blob/master/core/model/one_stage/yolov4/yolov4.py)
+- [YOLO v5] (https://www.kaggle.com/code/andrej0marinchenko/yolov5-tensorflow)
 
 ## Development
 
