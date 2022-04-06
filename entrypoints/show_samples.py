@@ -17,7 +17,7 @@ config_flags.DEFINE_config_file("config", "configs/main.py")
 def visualize_bounding_boxes(img, annotations):
     for annotation in annotations:
         x, y, w, h, category = annotation.astype(int)
-        if h == -1:
+        if category == -1:
             break
         img = cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 3)
     return img
@@ -25,8 +25,7 @@ def visualize_bounding_boxes(img, annotations):
 
 def main(args):
     config = FLAGS.config
-    ds = reef_net.loaders.load_reef_dataset(config)
-    ds = ds.shuffle(100)
+    ds = reef_net.loaders.load_reef_dataset(config, min_boxes_per_image=5)
 
     (image, labels) = next(iter(ds.take(1)))
     image, labels = image.numpy(), labels.numpy()
