@@ -26,14 +26,15 @@ def visualize_bounding_boxes(img, annotations):
 def main(args):
     config = FLAGS.config
     ds = reef_net.loaders.load_reef_dataset(config, min_boxes_per_image=5)
+    ds = ds.shuffle(20)
 
     (image, labels) = next(iter(ds.take(1)))
     image, labels = image.numpy(), labels.numpy()
 
     image = visualize_bounding_boxes(image, labels)
     plt.imshow(image / 255.0)
+    plt.axis('off')
     plt.show()
-
 
 if __name__ == "__main__":
     app.run(main)
