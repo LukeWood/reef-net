@@ -1,4 +1,4 @@
-[reefnet logo](media/reefnet.png)
+![reefnet logo](media/reefnet.png)
 
 <br/>
 
