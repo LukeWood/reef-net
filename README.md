@@ -1,4 +1,6 @@
-# ReefNet
+![reefnet](media/reefnet.png)
+
+<br/>
 
 ![Demo image with bounding boxes](media/demo_image.png)
 
