@@ -1,8 +1,10 @@
 ![reefnet logo](media/reefnet.png)
 
-<br/>
+<hline/>
 
 <img src="media/demo_image.png" width="400x"/>
+
+<br/>
 
 Dataset: https://www.kaggle.com/competitions/tensorflow-great-barrier-reef/overview
 
