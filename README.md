@@ -1,5 +1,7 @@
 # ReefNet
 
+![Demo image with bounding boxes](media/demo_image.png)
+
 Dataset: https://www.kaggle.com/competitions/tensorflow-great-barrier-reef/overview
 
 Let's work with prototypes in the `prototypes` folder and follow the following
@@ -22,6 +24,12 @@ python setup.py develop
 ```
 
 This will install all of the dependencies and get you up and running.
+
+To test that you are properly setup, try running:
+
+```
+python entrypoints/show_samples.py
+```
 
 # Project Structure
 
