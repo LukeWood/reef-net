@@ -1,4 +1,4 @@
-<center><img src="media/reefnet.png"/></center>
+[reefnet logo](media/reefnet.png)
 
 <br/>
 
