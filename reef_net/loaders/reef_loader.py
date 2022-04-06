@@ -63,7 +63,7 @@ def decode_img(img):
     # return tf.image.resize(img, [img_height, img_width])
 
 
-def load_reef_dataset(config, filter_empty_images=True):
+def load_reef_dataset(config, min_boxes_per_image=0):
     base_path = config.data_path
     csv_path = os.path.abspath(os.path.join(base_path, "train.csv"))
     image_base_path = os.path.abspath(os.path.join(base_path, "train_images"))
@@ -80,11 +80,11 @@ def load_reef_dataset(config, filter_empty_images=True):
     )
 
     df["boxes"] = df["annotations"].apply(lambda annotations: get_bboxes(annotations))
-    df["num_bboxes"] = df["annotations"].apply(lambda x: len(x))
+    df["num_bboxes"] = df["boxes"].apply(lambda x: len(x))
     max_boxes = df["num_bboxes"].max()
 
-    if filter_empty_images:
-        df = df[df["num_bboxes"] > 0]
+    if min_boxes_per_image != 0:
+        df = df[df["num_bboxes"] > min_boxes_per_image]
 
     image_paths = df["image_path"]
     boxes = df["boxes"]
