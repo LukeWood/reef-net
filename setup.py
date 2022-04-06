@@ -5,8 +5,6 @@ VERSION = "0.0.0"
 
 setup(
     name="reef-net",
-    packages=["reef-net"],
-    name="reef-net",
     packages=find_packages(exclude=("*_test.py",)),
     version=VERSION,
     description="Starfish object detection model for the TensorFlow save the reef dataset",
