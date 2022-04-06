@@ -1,7 +1,5 @@
 ![reefnet logo](media/reefnet.png)
 
-<hline/>
-
 <img src="media/demo_image.png" width="400x"/>
 
 <br/>
