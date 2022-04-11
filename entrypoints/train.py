@@ -35,7 +35,7 @@ def main(args):
 
     if FLAGS.wandb:
         wandb.init(
-            project=config.wandb_project_name, entity="aacl", config=config.to_dict()
+            project=config.wandb_project_name, entity="reef-net", config=config.to_dict()
         )
 
 
