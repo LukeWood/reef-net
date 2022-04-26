@@ -15,7 +15,7 @@ def get_bboxes(annotations):
     annotations = annotations.replace("'", '"')
     annotations = json.loads(annotations)
     for bbox in annotations:
-        box = [bbox["x"], bbox["y"], bbox["width"], bbox["height"], 0]
+        box = [bbox["x"], bbox["y"], bbox["width"], bbox["height"]]
         box = [float(x) for x in box]
         result.append(box)
     return result
@@ -94,13 +94,14 @@ def load_reef_dataset(config, min_boxes_per_image=0):
             img = cv2.imread(image_path)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
             annotations = np.array(annotations)
-            annotations = pad_to_shape(annotations, (max_boxes, 5))
-            yield (img, np.array(annotations))
+            annotations = pad_to_shape(annotations, (max_boxes, 4))
+            yield (img, np.array(annotations), [0])
 
     return tf.data.Dataset.from_generator(
         dataset_generator,
         output_signature=(
             tf.TensorSpec(shape=(None, None, 3), dtype=tf.float32),
-            tf.TensorSpec(shape=(None, 5), dtype=tf.float32),
+            tf.TensorSpec(shape=(None, 4), dtype=tf.float32),
+            tf.TensorSpec(shape=(1,), dtype=tf.int32),
         ),
     )
