@@ -7,14 +7,6 @@ from tensorflow import keras
 
 from reef_net.utils import AnchorBox, convert_to_corners
 
-FLAGS = flags.FLAGS
-config_flags.DEFINE_config_file("config", "configs/main.py")
-config = FLAGS.config
-
-
-# load data
-ds = load_reef_dataset(config, min_boxes_per_image=0)
-
 
 # --- Building the ResNet50 backbone ---
 def get_backbone():

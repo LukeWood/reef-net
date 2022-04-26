@@ -28,10 +28,10 @@ def main(args):
     ds = reef_net.loaders.load_reef_dataset(config, min_boxes_per_image=5)
     ds = ds.shuffle(20)
 
-    (image, labels) = next(iter(ds.take(1)))
-    image, labels = image.numpy(), labels.numpy()
+    (image, bounding_boxes) = next(iter(ds.take(1)))
+    image, bounding_boxes = image.numpy(), bounding_boxes.numpy()
 
-    image = visualize_bounding_boxes(image, labels)
+    image = visualize_bounding_boxes(image, bounding_boxes)
     plt.imshow(image / 255.0)
     plt.axis('off')
     plt.show()
