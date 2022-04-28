@@ -20,13 +20,6 @@ flags.DEFINE_string("artifact_dir", None, "Directory to store artifacts")
 
 FLAGS = flags.FLAGS
 
-def get_dataset(config):
-    if config.dataset == "cifar10":
-        return cifar10_ssl_loader.prepare_autoencoder_datasets(config)
-    elif config.dataset == "mnist":
-        return mnist_loader.prepare_autoencoder_datasets(config)
-    raise ValueError(f"Unsupported dataset in `get_dataset`, got={config.dataset}")
-
 def main(args):
     del args
     config = FLAGS.config
@@ -48,7 +41,7 @@ def main(args):
 
     autotune = tf.data.AUTOTUNE
     ds = load_reef_dataset(config, min_boxes_per_image=1)
-    ds = ds.shuffle(config.batch_size * 2)
+    ds = ds.shuffle(config.shuffle_buffer)
     ds = ds.repeat()
     ds = ds.batch(config.batch_size)
     label_encoder = LabelEncoder()

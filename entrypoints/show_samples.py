@@ -20,6 +20,7 @@ def visualize_bounding_boxes(img, annotations, category):
         if category == -1:
             break
         img = cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 3)
+
     return img
 
 
