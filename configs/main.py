@@ -5,4 +5,5 @@ def get_config() -> ml_collections.ConfigDict:
     config = ml_collections.ConfigDict()
     config.data_path = "tensorflow-great-barrier-reef"
     config.batch_size = 2
+    config.input_shape = (720, 1280, 3)
     return config

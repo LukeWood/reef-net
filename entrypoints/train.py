@@ -47,7 +47,7 @@ def main(args):
         )
 
     autotune = tf.data.AUTOTUNE
-    ds = load_reef_dataset(config)
+    ds = load_reef_dataset(config, min_boxes_per_image=1)
     ds = ds.shuffle(config.batch_size * 2)
     ds = ds.repeat()
     ds = ds.batch(config.batch_size)
@@ -56,15 +56,15 @@ def main(args):
     ds = ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
     ds = ds.prefetch(autotune)
     # input_shape = ds.element_spec[0].shape
-    
-    resnet50_backbone = get_backbone()
+
+    resnet50_backbone = get_backbone(config.input_shape)
     # print(resnet50_backbone.summary())
     loss_fn = RetinaNetLoss(1)
     model = RetinaNet(1, resnet50_backbone)
-    
+
     optimizer = tf.optimizers.SGD(momentum=0.9)
     model.compile(loss=loss_fn, optimizer=optimizer)
-    
+
     print("\n\n\n\n\n")
     print("Starting training")
     model.fit(

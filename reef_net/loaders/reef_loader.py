@@ -93,14 +93,7 @@ def load_reef_dataset(config, min_boxes_per_image=0):
         for image_path, annotations in zip(image_paths, boxes):
             img = cv2.imread(image_path)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
-            new_img = np.zeros((1280, 1280, 3))
-            new_img[560:, :, :] = img
-            img = new_img
-            
-            img = cv2.resize(img, dsize=(640, 640))
             annotations = np.array(annotations)
-            if annotations != np.asarray([]):
-               annotations = annotations + np.array([0, 560, 0, 0])
             annotations = pad_to_shape(annotations, (max_boxes, 4))
             yield (img, np.array(annotations), [0])
 

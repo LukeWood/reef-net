@@ -9,10 +9,10 @@ from reef_net.utils import AnchorBox, convert_to_corners
 
 
 # --- Building the ResNet50 backbone ---
-def get_backbone():
+def get_backbone(input_shape):
     """Builds ResNet50 with pre-trained imagenet weights"""
     backbone = keras.applications.ResNet50(
-        include_top=False, input_shape=[None, None, 3]
+        include_top=False, input_shape=input_shape
     )
     c3_output, c4_output, c5_output = [
         backbone.get_layer(layer_name).output
@@ -31,7 +31,7 @@ class FeaturePyramid(keras.layers.Layer):
       num_classes: Number of classes in the dataset.
       backbone: The backbone to build the feature pyramid from.
         Currently supports ResNet50 only.
-        
+
     Also the inpurt shape of individual image is 720x1280
     """
 
