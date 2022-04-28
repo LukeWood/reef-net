@@ -64,9 +64,9 @@ def main(args):
 
     optimizer = tf.optimizers.SGD(momentum=0.9)
     model.compile(loss=loss_fn, optimizer=optimizer, run_eagerly=True)
+    model.build((None,) + config.input_shape)
+    model.summary()
 
-    print("\n\n\n\n\n")
-    print("Starting training")
     model.fit(
         ds.take(100),
         epochs=1
