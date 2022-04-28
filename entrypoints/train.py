@@ -63,7 +63,7 @@ def main(args):
     model = RetinaNet(1, resnet50_backbone)
 
     optimizer = tf.optimizers.SGD(momentum=0.9)
-    model.compile(loss=loss_fn, optimizer=optimizer)
+    model.compile(loss=loss_fn, optimizer=optimizer, run_eagerly=True)
 
     print("\n\n\n\n\n")
     print("Starting training")
