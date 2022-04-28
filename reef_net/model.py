@@ -47,6 +47,7 @@ class FeaturePyramid(keras.layers.Layer):
         self.conv_c6_3x3 = keras.layers.Conv2D(256, 3, 2, "same")
         self.conv_c7_3x3 = keras.layers.Conv2D(256, 3, 2, "same")
         self.upsample_2x = keras.layers.UpSampling2D(2)
+        #self.add_zeros_1 = keras.layers.Add()([x, b])
 
     def call(self, images, training=False):
         c3_output, c4_output, c5_output = self.backbone(images, training=training)
@@ -57,7 +58,10 @@ class FeaturePyramid(keras.layers.Layer):
         p5_output = self.conv_c5_1x1(c5_output)
 
         print("P5 1", p5_output.shape)
-        p4_output = p4_output + self.upsample_2x(p5_output)
+
+        p4_shape = tf.shape(p4_output)
+        p5_upsample = self.upsample_2x(p5_output)[:, :p4_shape[1], ...]
+        p4_output = p4_output + p5_upsample
         print("P4 2", p4_output)
         p3_output = p3_output + self.upsample_2x(p4_output)
         print("P3 2", p3_output)
