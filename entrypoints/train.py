@@ -49,6 +49,7 @@ def main(args):
     autotune = tf.data.AUTOTUNE
     ds = load_reef_dataset(config, min_boxes_per_image=1)
     ds = ds.shuffle(config.batch_size * 2)
+    ds = ds.map(preprocess_data, num_parallel_calls=autotune)
     ds = ds.repeat()
     ds = ds.batch(config.batch_size)
     label_encoder = LabelEncoder()
