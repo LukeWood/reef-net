@@ -84,15 +84,11 @@ def convert_xywh_to_corners_percentage(annotations, image_shape):
     y2 = y + (h/height)
 
     result = tf.stack([x, y, x2, y2], axis=-1)
-    tf.print('result of stack', result)
-    tf.print('result.shape', tf.shape(result))
     return result
 
 def preprocess_data(image, annotations, class_id):
     image_shape = tf.shape(image)
-    print('bbox before', annotations)
     bbox = convert_xywh_to_corners_percentage(annotations, image_shape)
-    tf.print('bbox after convert to corners', bbox)
 
     # image, bbox = random_flip_horizontal(image, bbox)
 
@@ -108,7 +104,5 @@ def preprocess_data(image, annotations, class_id):
         ],
         axis=-1,
     )
-    tf.print('bbox after multiplying by image sizes', bbox)
     bbox = convert_to_xywh(bbox)
-    tf.print('bbox after convert_to_xywh by image sizes', bbox)
     return image, bbox, class_id
