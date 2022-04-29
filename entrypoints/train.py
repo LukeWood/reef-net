@@ -51,7 +51,7 @@ def main(args):
     ds = ds.shuffle(config.batch_size * 2)
     ds = ds.map(preprocess_data, num_parallel_calls=autotune)
     ds = ds.repeat()
-    ds = ds.batch(config.batch_size)
+    ds = ds.padded_batch(config.batch_size, padding_values(-1, -1, -1))
     label_encoder = LabelEncoder()
 
     ds = ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)

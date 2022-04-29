@@ -20,17 +20,6 @@ def get_bboxes(annotations):
         result.append(box)
     return result
 
-
-def pad_to_shape(a, shape):
-    for _ in range(len(shape) - len(a.shape)):
-        a = np.expand_dims(a, axis=0)
-    y_, x_ = shape
-    y, x = a.shape
-    y_pad = y_ - y
-    x_pad = x_ - x
-    return np.pad(a, ((0, y_pad), (0, x_pad)), mode="constant", constant_values=-1)
-
-
 #
 # def parse_annotations(annotations, max_boxes):
 #     result = []
@@ -94,7 +83,6 @@ def load_reef_dataset(config, min_boxes_per_image=0):
             img = cv2.imread(image_path)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
             annotations = np.array(annotations)
-            annotations = pad_to_shape(annotations, (max_boxes, 4))
             yield (img, np.array(annotations), [0])
 
     return tf.data.Dataset.from_generator(
