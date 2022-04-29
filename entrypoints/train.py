@@ -69,10 +69,20 @@ def main(args):
     model.compile(loss=loss_fn, optimizer=optimizer, run_eagerly=True)
     model.build((None, None, None, 3))
     model.summary()
+    
+    EPOCHS = 10
+    checkpoint_filepath = '/tmp/checkpoint'
+    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+        filepath=checkpoint_filepath,
+        save_weights_only=True,
+        monitor='val_accuracy',
+        mode='max',
+        save_best_only=True)
 
     model.fit(
         ds.take(5),
-        epochs=1
+        epoch=EPOCHS
+        callbacks=[model_checkpoint_callback]
     )
 
     if FLAGS.model_dir is not None:
