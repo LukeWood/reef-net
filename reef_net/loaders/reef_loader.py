@@ -45,7 +45,6 @@ def load_image(self, idx):
 
 
 def decode_img(img):
-    tf.print(img)
     # Convert the compressed string to a 3D uint8 tensor
     return tf.io.decode_jpeg(img, channels=3)
     # Resize the image to the desired size
@@ -83,13 +82,13 @@ def load_reef_dataset(config, min_boxes_per_image=0):
             img = cv2.imread(image_path)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
             annotations = np.array(annotations)
-            yield (img, np.array(annotations), [0])
+            yield (img, np.array(annotations), [0] * annotations.shape[0])
 
     return tf.data.Dataset.from_generator(
         dataset_generator,
         output_signature=(
             tf.TensorSpec(shape=(None, None, 3), dtype=tf.float32),
             tf.TensorSpec(shape=(None, 4), dtype=tf.float32),
-            tf.TensorSpec(shape=(1,), dtype=tf.int32),
+            tf.TensorSpec(shape=(None,), dtype=tf.int32),
         ),
     )
