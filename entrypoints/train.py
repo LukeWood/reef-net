@@ -51,23 +51,25 @@ def main(args):
     ds = ds.shuffle(config.batch_size * 2)
     ds = ds.map(preprocess_data, num_parallel_calls=autotune)
     ds = ds.repeat()
-    ds = ds.padded_batch(config.batch_size, padding_values(-1, -1, -1))
+    ds = ds.padded_batch(config.batch_size, padding_values=(0.0, 1e-8, -1), drop_remainder=True)
     label_encoder = LabelEncoder()
-
     ds = ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
-    ds = ds.prefetch(autotune)
+    # ds = ds.apply(tf.data.experimental.ignore_errors())
     # input_shape = ds.element_spec[0].shape
 
-    resnet50_backbone = get_backbone(config.input_shape)
+    resnet50_backbone = get_backbone()
     # print(resnet50_backbone.summary())
     loss_fn = RetinaNetLoss(1)
     model = RetinaNet(1, resnet50_backbone)
 
     optimizer = tf.optimizers.SGD(momentum=0.9)
     model.compile(loss=loss_fn, optimizer=optimizer, run_eagerly=True)
-    model.build((None,) + config.input_shape)
+    model.build((None, None, None, 3))
     model.summary()
 
+    for sample in ds.take(1):
+        print(sample)
+    return
     model.fit(
         ds.take(100),
         epochs=1

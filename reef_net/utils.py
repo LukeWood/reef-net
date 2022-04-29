@@ -282,19 +282,28 @@ class LabelEncoder:
 
     def _encode_sample(self, image_shape, gt_boxes, cls_ids):
         """Creates box and classification targets for a single sample"""
+        tf.print("start get anchors")
         anchor_boxes = self._anchor_box.get_anchors(image_shape[1], image_shape[2])
+        tf.print("start cast class")
         cls_ids = tf.cast(cls_ids, dtype=tf.float32)
+        tf.print("start match gt")
         matched_gt_idx, positive_mask, ignore_mask = self._match_anchor_boxes(
             anchor_boxes, gt_boxes
         )
+        tf.print("gather")
         matched_gt_boxes = tf.gather(gt_boxes, matched_gt_idx)
+        tf.print("start box targets")
         box_target = self._compute_box_target(anchor_boxes, matched_gt_boxes)
+        tf.print("gather")
         matched_gt_cls_ids = tf.gather(cls_ids, matched_gt_idx)
+        tf.print("start tf where")
         cls_target = tf.where(
             tf.not_equal(positive_mask, 1.0), -1.0, matched_gt_cls_ids
         )
+        tf.print("start tf where2")
         cls_target = tf.where(tf.equal(ignore_mask, 1.0), -2.0, cls_target)
         cls_target = tf.expand_dims(cls_target, axis=-1)
+        tf.print("start concat")
         label = tf.concat([box_target, cls_target], axis=-1)
         return label
 
@@ -302,10 +311,13 @@ class LabelEncoder:
         """Creates box and classification targets for a batch"""
         images_shape = tf.shape(batch_images)
         batch_size = images_shape[0]
-
-        labels = tf.TensorArray(dtype=tf.float32, size=batch_size, dynamic_size=True)
-        for i in range(batch_size):
+        labels = tf.TensorArray(dtype=tf.float32, size=batch_size, dynamic_size=False)
+        tf.print('batch_images', batch_images.shape)
+        for i in tf.range(batch_size):
+            tf.print('cls_ids[i]', cls_ids[i])
             label = self._encode_sample(images_shape, gt_boxes[i], cls_ids[i])
             labels = labels.write(i, label)
+
         batch_images = tf.keras.applications.resnet.preprocess_input(batch_images)
-        return batch_images, labels.stack()
+        result = (batch_images, labels.stack())
+        return result
