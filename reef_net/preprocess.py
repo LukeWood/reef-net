@@ -69,27 +69,32 @@ def resize_and_pad_image(image, min_side=800.0, max_side=1333.0, jitter=[640, 10
     )
     return image, image_shape, ratio
 
+def convert_xywh_to_corners_percentage(annotations, image_shape):
+    # annotations.shape = [num_boxes, 4]
+    x = annotations[:, 0]
+    y = annotations[:, 1]
+    w = annotations[:, 2]
+    h = annotations[:, 3]
+    height = tf.cast(image_shape[0], annotations.dtype)
+    width = tf.cast(image_shape[1], annotations.dtype)
 
-def preprocess_data(sample):
-    """Applies preprocessing step to a single sample
+    x = x/width
+    y = y/height
+    x2 = x + (w/width)
+    y2 = y + (h/height)
 
-    Arguments:
-      sample: A dict representing a single training sample.
+    result = tf.stack([x, y, x2, y2], axis=-1)
+    return result
 
-    Returns:
-      image: Resized and padded image with random horizontal flipping applied.
-      bbox: Bounding boxes with the shape `(num_objects, 4)` where each box is
-        of the format `[x, y, width, height]`.
-      class_id: An tensor representing the class id of the objects, having
-        shape `(num_objects,)`.
-    """
-    image = sample["image"]
-    bbox = swap_xy(sample["objects"]["bbox"])
-    class_id = tf.cast(sample["objects"]["label"], dtype=tf.int32)
+def preprocess_data(image, annotations, class_id):
+    image_shape = tf.shape(image)
+    bbox = convert_xywh_to_corners_percentage(annotations, image_shape)
 
-    image, bbox = random_flip_horizontal(image, bbox)
+    # image, bbox = random_flip_horizontal(image, bbox)
+
+    # [0, 100, 32, 32] -> absolute pixels
+    # [0.2, 0.3, 0.01, 0.01] -> percentage of the input shape
     image, image_shape, _ = resize_and_pad_image(image)
-
     bbox = tf.stack(
         [
             bbox[:, 0] * image_shape[1],
@@ -101,5 +106,3 @@ def preprocess_data(sample):
     )
     bbox = convert_to_xywh(bbox)
     return image, bbox, class_id
-
-
