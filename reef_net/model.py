@@ -118,9 +118,7 @@ class RetinaNet(keras.Model):
         self.box_head = build_head(9 * 4, "zeros")
 
     def call(self, image, training=False):
-        tf.print("About to call FPN")
         features = self.fpn(image, training=training)
-        tf.print("features", features)
         N = tf.shape(image)[0]
         cls_outputs = []
         box_outputs = []

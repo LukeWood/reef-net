@@ -11,6 +11,7 @@ from reef_net.model import get_backbone, RetinaNetLoss, RetinaNet, DecodePredict
 from reef_net.utils import LabelEncoder, visualize_detections
 from reef_net.preprocess import preprocess_data, resize_and_pad_image
 
+tf.debugging.disable_traceback_filtering()
 
 config_flags.DEFINE_config_file("config", "configs/main.py")
 
@@ -52,6 +53,7 @@ def main(args):
     ds = ds.map(preprocess_data, num_parallel_calls=autotune)
     ds = ds.repeat()
     ds = ds.padded_batch(config.batch_size, padding_values=(0.0, 1e-8, -1), drop_remainder=True)
+
     label_encoder = LabelEncoder()
     ds = ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
     # ds = ds.apply(tf.data.experimental.ignore_errors())
@@ -59,17 +61,14 @@ def main(args):
 
     resnet50_backbone = get_backbone()
     # print(resnet50_backbone.summary())
-    loss_fn = RetinaNetLoss(1)
-    model = RetinaNet(1, resnet50_backbone)
+    loss_fn = RetinaNetLoss(2)
+    model = RetinaNet(2, resnet50_backbone)
 
     optimizer = tf.optimizers.SGD(momentum=0.9)
     model.compile(loss=loss_fn, optimizer=optimizer, run_eagerly=True)
     model.build((None, None, None, 3))
     model.summary()
 
-    for sample in ds.take(1):
-        print(sample)
-    return
     model.fit(
         ds.take(100),
         epochs=1
