@@ -1,5 +1,6 @@
 import os
 import wandb
+from datetime import datetime
 from absl import app
 from absl import flags
 from absl import logging
@@ -70,18 +71,30 @@ def main(args):
     model.build((None, None, None, 3))
     model.summary()
     
-    EPOCHS = 10
-    checkpoint_filepath = '/tmp/checkpoint'
+    
+
+    # datetime object containing current date and time
+    # dd/mm/YY H:M:S
+    now = datetime.now()
+    dt = now.strftime("%d/%m/%Y %H:%M:%S")
+    dt = dt.replace("/", "_", -1)
+    dt = dt.replace(":", "_", -1)
+    dt = dt.replace(" ", "__", -1)
+    
+    EPOCHS = 100
+    checkpoint_filepath = os.path.abspath('./models/' + dt + '/model')
+    print(checkpoint_filepath)
     model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
         filepath=checkpoint_filepath,
-        save_weights_only=True,
+        # save_weights_only=True,
         monitor='val_accuracy',
         mode='max',
-        save_best_only=True)
+        save_freq=10
+        )
+        # save_best_only=True)
 
     model.fit(
-        ds.take(5),
-        epoch=EPOCHS
+        epochs=EPOCHS,
         callbacks=[model_checkpoint_callback]
     )
 
