@@ -302,7 +302,6 @@ class LabelEncoder:
         """Creates box and classification targets for a batch"""
         images_shape = tf.shape(batch_images)
         batch_size = images_shape[0]
-
         labels = tf.TensorArray(dtype=tf.float32, size=batch_size, dynamic_size=True)
         for i in range(batch_size):
             label = self._encode_sample(images_shape, gt_boxes[i], cls_ids[i])

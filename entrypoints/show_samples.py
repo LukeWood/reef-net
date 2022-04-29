@@ -36,6 +36,7 @@ def main(args):
 
     (image, bounding_boxes, category) = next(iter(ds.take(1)))
     image, bounding_boxes, category = image.numpy(), bounding_boxes.numpy(), category.numpy()
+    print("Image size", image.shape)
     image = visualize_bounding_boxes(image, bounding_boxes, category)
     plt.imshow(image / 255.0)
     plt.axis('off')

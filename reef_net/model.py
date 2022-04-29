@@ -9,10 +9,10 @@ from reef_net.utils import AnchorBox, convert_to_corners
 
 
 # --- Building the ResNet50 backbone ---
-def get_backbone(input_shape):
+def get_backbone():
     """Builds ResNet50 with pre-trained imagenet weights"""
     backbone = keras.applications.ResNet50(
-        include_top=False, input_shape=input_shape
+        include_top=False, input_shape=[None, None, 3]
     )
     c3_output, c4_output, c5_output = [
         backbone.get_layer(layer_name).output
@@ -52,25 +52,17 @@ class FeaturePyramid(keras.layers.Layer):
     def call(self, images, training=False):
         c3_output, c4_output, c5_output = self.backbone(images, training=training)
         p3_output = self.conv_c3_1x1(c3_output)
-        print("P3 1", p3_output.shape)
         p4_output = self.conv_c4_1x1(c4_output)
-        print("P4 1", p4_output.shape)
         p5_output = self.conv_c5_1x1(c5_output)
 
-        print("P5 1", p5_output.shape)
-
-        p4_shape = tf.shape(p4_output)
         p4_output = p4_output + self.upsample_2x(p5_output)
-        print("P4 2", p4_output)
         p3_output = p3_output + self.upsample_2x(p4_output)
-        print("P3 2", p3_output)
         # -- New Layer Added here
         p3_output = self.conv_c3_3x3(p3_output)
         p4_output = self.conv_c4_3x3(p4_output)
         p5_output = self.conv_c5_3x3(p5_output)
         p6_output = self.conv_c6_3x3(c5_output)
         p7_output = self.conv_c7_3x3(tf.nn.relu(p6_output))
-        print("P7 O", p7_output)
         return p3_output, p4_output, p5_output, p6_output, p7_output
 
 
