@@ -60,8 +60,7 @@ class FeaturePyramid(keras.layers.Layer):
         print("P5 1", p5_output.shape)
 
         p4_shape = tf.shape(p4_output)
-        p5_upsample = self.upsample_2x(p5_output)[:, :p4_shape[1], ...]
-        p4_output = p4_output + p5_upsample
+        p4_output = p4_output + self.upsample_2x(p5_output)
         print("P4 2", p4_output)
         p3_output = p3_output + self.upsample_2x(p4_output)
         print("P3 2", p3_output)
