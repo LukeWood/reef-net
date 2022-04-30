@@ -50,7 +50,7 @@ def main(args):
         )
 
     autotune = tf.data.AUTOTUNE
-    ds = load_reef_dataset(config, min_boxes_per_image=1)
+    ds, dataset_size = load_reef_dataset(config, min_boxes_per_image=1)
     ds = ds.shuffle(config.batch_size * 2)
     ds = ds.map(preprocess_data, num_parallel_calls=autotune)
     ds = ds.repeat()
@@ -58,7 +58,7 @@ def main(args):
 
     label_encoder = LabelEncoder()
     ds = ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
-    # ds = ds.apply(tf.data.experimental.ignore_errors())
+    ds = ds.apply(tf.data.experimental.ignore_errors())
     # input_shape = ds.element_spec[0].shape
 
     resnet50_backbone = get_backbone()
@@ -81,22 +81,26 @@ def main(args):
     dt = dt.replace(":", "_", -1)
     dt = dt.replace(" ", "__", -1)
     
-    EPOCHS = 100
+    
     checkpoint_filepath = os.path.abspath('./models/' + dt + '/model')
     print(checkpoint_filepath)
     model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
         filepath=checkpoint_filepath,
-        # save_weights_only=True,
-        monitor='val_accuracy',
-        mode='max',
+        monitor='loss',
         save_freq=10
+        # save_best_only=True
         )
-        # save_best_only=True)
 
+    epochs = 100
+    steps_per_epoch = dataset_size / (config.batch_size*8)
     model.fit(
-        epochs=EPOCHS,
+        # ds.take(dataset_size),
+        ds,
+        epochs=epochs,
+        steps_per_epoch=steps_per_epoch,
         callbacks=[model_checkpoint_callback]
     )
+    print("Fit Done")
 
     if FLAGS.model_dir is not None:
         model.save(FLAGS.model_dir)
