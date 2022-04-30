@@ -71,8 +71,8 @@ def load_reef_dataset(config, min_boxes_per_image=0):
     df["num_bboxes"] = df["boxes"].apply(lambda x: len(x))
     max_boxes = df["num_bboxes"].max()
 
-    if min_boxes_per_image != 0:
-        df = df[df["num_bboxes"] > min_boxes_per_image]
+    # if min_boxes_per_image != 0:
+    df = df[df["num_bboxes"] >= min_boxes_per_image]
 
     image_paths = df["image_path"]
     boxes = df["boxes"]
@@ -82,7 +82,9 @@ def load_reef_dataset(config, min_boxes_per_image=0):
             img = cv2.imread(image_path)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
             annotations = np.array(annotations)
-            yield (img, np.array(annotations), [0] * annotations.shape[0])
+            category = [[0]*annotations.shape[0]]
+            category = list(np.concatenate(category).flat)
+            yield (img, annotations, category)
 
     return tf.data.Dataset.from_generator(
         dataset_generator,
@@ -91,4 +93,4 @@ def load_reef_dataset(config, min_boxes_per_image=0):
             tf.TensorSpec(shape=(None, 4), dtype=tf.float32),
             tf.TensorSpec(shape=(None,), dtype=tf.int32),
         ),
-    )
+    ), len(df)
