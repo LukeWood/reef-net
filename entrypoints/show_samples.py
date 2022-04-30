@@ -22,7 +22,7 @@ def visualize_bounding_boxes(img, annotations, category):
         x2 = (x+w/2).astype(int)
         y1 = (y-h/2).astype(int)
         y2 = (y+h/2).astype(int)
-        if category == -1:
+        if category.size == 0:
             break
         img = cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 3)
     return img
@@ -30,12 +30,13 @@ def visualize_bounding_boxes(img, annotations, category):
 
 def main(args):
     config = FLAGS.config
-    ds = reef_net.loaders.load_reef_dataset(config, min_boxes_per_image=5)
+    ds, dataset_size = reef_net.loaders.load_reef_dataset(config, min_boxes_per_image=1)
     ds = ds.shuffle(20)
     ds = ds.map(preprocess_data)
 
-    (image, bounding_boxes, category) = next(iter(ds.take(1)))
+    (image, bounding_boxes, category) = next(iter(ds.take(100)))
     image, bounding_boxes, category = image.numpy(), bounding_boxes.numpy(), category.numpy()
+    print("Category", category)
     print("Image size", image.shape)
     image = visualize_bounding_boxes(image, bounding_boxes, category)
     plt.imshow(image / 255.0)
