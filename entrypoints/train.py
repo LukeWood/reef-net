@@ -100,7 +100,7 @@ def main(args):
     model.compile(
         loss=loss_fn,
         optimizer=optimizer,
-        metrics=[keras_cv.metrics.MeanAveragePrecision()],
+        #metrics=[keras_cv.metrics.MeanAveragePrecision()],
         run_eagerly=True,
     )
     model.build((None, None, None, 3))
@@ -119,6 +119,8 @@ def main(args):
 
     epochs = 100
     steps_per_epoch = dataset_size / (config.batch_size)
+    if FLAGS.debug:
+        steps_per_epoch = 3
     model.fit(
         ds,
         epochs=epochs,
