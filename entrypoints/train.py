@@ -91,46 +91,50 @@ def main(args):
     ds = ds.apply(tf.data.experimental.ignore_errors())
     # input_shape = ds.element_spec[0].shape
 
-    resnet50_backbone = get_backbone()
-    # print(resnet50_backbone.summary())
-    loss_fn = RetinaNetLoss(2)
-    model = RetinaNet(2, resnet50_backbone)
+    strategy = tf.distribute.MirroredStrategy()
 
-    optimizer = tf.optimizers.SGD(momentum=0.9)
-    model.compile(
-        loss=loss_fn,
-        optimizer=optimizer,
-        #metrics=[keras_cv.metrics.MeanAveragePrecision()],
-        run_eagerly=True,
-    )
-    model.build((None, None, None, 3))
-    model.summary()
+    with strategy.scope():
 
-    # datetime object containing current date and time
-    # dd/mm/YY H:M:S
-    now = datetime.now()
-    dt = now.strftime("%d/%m/%Y %H:%M:%S")
-    dt = dt.replace("/", "_", -1)
-    dt = dt.replace(":", "_", -1)
-    dt = dt.replace(" ", "__", -1)
+        resnet50_backbone = get_backbone()
+        # print(resnet50_backbone.summary())
+        loss_fn = RetinaNetLoss(2)
+        model = RetinaNet(2, resnet50_backbone)
 
-    checkpoint_filepath = os.path.abspath("./models/" + dt + "/model")
-    print("Checkpoint filepath:", checkpoint_filepath)
+        optimizer = tf.optimizers.SGD(momentum=0.9)
+        model.compile(
+            loss=loss_fn,
+            optimizer=optimizer,
+            #metrics=[keras_cv.metrics.MeanAveragePrecision()],
+            run_eagerly=True,
+        )
+        model.build((None, None, None, 3))
+        model.summary()
 
-    epochs = 100
-    steps_per_epoch = dataset_size / (config.batch_size)
-    if FLAGS.debug:
-        steps_per_epoch = 3
-    model.fit(
-        ds,
-        epochs=epochs,
-        steps_per_epoch=steps_per_epoch,
-        callbacks=get_callbacks(checkpoint_filepath),
-    )
-    print("Fit Done")
+        # datetime object containing current date and time
+        # dd/mm/YY H:M:S
+        now = datetime.now()
+        dt = now.strftime("%d/%m/%Y %H:%M:%S")
+        dt = dt.replace("/", "_", -1)
+        dt = dt.replace(":", "_", -1)
+        dt = dt.replace(" ", "__", -1)
 
-    if FLAGS.model_dir is not None:
-        model.save(FLAGS.model_dir)
+        checkpoint_filepath = os.path.abspath("./models/" + dt + "/model")
+        print("Checkpoint filepath:", checkpoint_filepath)
+
+        epochs = 100
+        steps_per_epoch = dataset_size / (config.batch_size)
+        if FLAGS.debug:
+            steps_per_epoch = 3
+        model.fit(
+            ds,
+            epochs=epochs,
+            steps_per_epoch=steps_per_epoch,
+            callbacks=get_callbacks(checkpoint_filepath),
+        )
+        print("Fit Done")
+
+        if FLAGS.model_dir is not None:
+            model.save(FLAGS.model_dir)
 
 
 if __name__ == "__main__":
