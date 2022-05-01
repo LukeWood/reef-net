@@ -1,11 +1,12 @@
-from absl import flags
-from ml_collections.config_flags import config_flags
-from reef_net.loaders import load_reef_dataset
 import numpy as np
 import tensorflow as tf
+from absl import flags
+from ml_collections.config_flags import config_flags
 from tensorflow import keras
 
-from reef_net.utils import AnchorBox, convert_to_corners
+from reef_net.loaders import load_reef_dataset
+from reef_net.utils import AnchorBox
+from reef_net.utils import convert_to_corners
 
 
 # --- Building the ResNet50 backbone ---
@@ -47,7 +48,7 @@ class FeaturePyramid(keras.layers.Layer):
         self.conv_c6_3x3 = keras.layers.Conv2D(256, 3, 2, "same")
         self.conv_c7_3x3 = keras.layers.Conv2D(256, 3, 2, "same")
         self.upsample_2x = keras.layers.UpSampling2D(2)
-        #self.add_zeros_1 = keras.layers.Add()([x, b])
+        # self.add_zeros_1 = keras.layers.Add()([x, b])
 
     def call(self, images, training=False):
         c3_output, c4_output, c5_output = self.backbone(images, training=training)
@@ -215,7 +216,7 @@ class RetinaNetBoxLoss(tf.losses.Loss):
     def call(self, y_true, y_pred):
         difference = y_true - y_pred
         absolute_difference = tf.abs(difference)
-        squared_difference = difference ** 2
+        squared_difference = difference**2
         loss = tf.where(
             tf.less(absolute_difference, self._delta),
             0.5 * squared_difference,

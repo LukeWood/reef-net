@@ -2,12 +2,11 @@ import os
 import re
 import zipfile
 
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-from tensorflow import keras
-
-import matplotlib.pyplot as plt
 import tensorflow_datasets as tfds
+from tensorflow import keras
 
 
 def swap_xy(boxes):
@@ -84,7 +83,9 @@ def compute_iou(boxes1, boxes2):
     return tf.clip_by_value(intersection_area / union_area, 0.0, 1.0)
 
 
-def visualize_detections(image, boxes, classes, scores, figsize=(7, 7), linewidth=1, color=[0, 0, 1]):
+def visualize_detections(
+    image, boxes, classes, scores, figsize=(7, 7), linewidth=1, color=[0, 0, 1]
+):
     """Visualize Detections"""
     image = np.array(image, dtype=np.uint8)
     plt.figure(figsize=figsize)
@@ -132,11 +133,11 @@ class AnchorBox:
 
     def __init__(self):
         self.aspect_ratios = [0.5, 1.0, 2.0]
-        self.scales = [2 ** x for x in [0, 1 / 3, 2 / 3]]
+        self.scales = [2**x for x in [0, 1 / 3, 2 / 3]]
 
         self._num_anchors = len(self.aspect_ratios) * len(self.scales)
-        self._strides = [2 ** i for i in range(3, 8)]
-        self._areas = [x ** 2 for x in [32.0, 64.0, 128.0, 256.0, 512.0]]
+        self._strides = [2**i for i in range(3, 8)]
+        self._areas = [x**2 for x in [32.0, 64.0, 128.0, 256.0, 512.0]]
         self._anchor_dims = self._compute_dims()
 
     def _compute_dims(self):
@@ -196,8 +197,8 @@ class AnchorBox:
         """
         anchors = [
             self._get_anchors(
-                tf.math.ceil(image_height / 2 ** i),
-                tf.math.ceil(image_width / 2 ** i),
+                tf.math.ceil(image_height / 2**i),
+                tf.math.ceil(image_width / 2**i),
                 i,
             )
             for i in range(3, 8)
