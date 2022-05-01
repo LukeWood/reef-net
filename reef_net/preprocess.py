@@ -2,7 +2,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from reef_net.utils import swap_xy, convert_to_xywh
+from reef_net.utils import convert_to_xywh
+from reef_net.utils import swap_xy
 
 
 def random_flip_horizontal(image, boxes):
@@ -25,7 +26,9 @@ def random_flip_horizontal(image, boxes):
     return image, boxes
 
 
-def resize_and_pad_image(image, min_side=800.0, max_side=1333.0, jitter=[640, 1024], stride=128.0):
+def resize_and_pad_image(
+    image, min_side=800.0, max_side=1333.0, jitter=[640, 1024], stride=128.0
+):
     """Resizes and pads image while preserving aspect ratio.
 
     1. Resizes images so that the shorter side is equal to `min_side`
@@ -69,6 +72,7 @@ def resize_and_pad_image(image, min_side=800.0, max_side=1333.0, jitter=[640, 10
     )
     return image, image_shape, ratio
 
+
 def convert_xywh_to_corners_percentage(annotations, image_shape):
     # annotations.shape = [num_boxes, 4]
     x = annotations[:, 0]
@@ -78,13 +82,14 @@ def convert_xywh_to_corners_percentage(annotations, image_shape):
     height = tf.cast(image_shape[0], annotations.dtype)
     width = tf.cast(image_shape[1], annotations.dtype)
 
-    x = x/width
-    y = y/height
-    x2 = x + (w/width)
-    y2 = y + (h/height)
+    x = x / width
+    y = y / height
+    x2 = x + (w / width)
+    y2 = y + (h / height)
 
     result = tf.stack([x, y, x2, y2], axis=-1)
     return result
+
 
 def preprocess_data(image, annotations, class_id):
     image_shape = tf.shape(image)
