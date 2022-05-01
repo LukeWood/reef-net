@@ -2,12 +2,12 @@ import os
 from datetime import datetime
 
 import tensorflow as tf
-import wandb
 from absl import app
 from absl import flags
 from absl import logging
 from ml_collections.config_flags import config_flags
 
+import wandb
 from reef_net.loaders import load_reef_dataset
 from reef_net.model import DecodePredictions
 from reef_net.model import RetinaNet
@@ -104,7 +104,7 @@ def main(args):
         model.compile(
             loss=loss_fn,
             optimizer=optimizer,
-            #metrics=[keras_cv.metrics.MeanAveragePrecision()],
+            # metrics=[keras_cv.metrics.MeanAveragePrecision()],
             run_eagerly=True,
         )
         model.build((None, None, None, 3))
