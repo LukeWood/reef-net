@@ -24,6 +24,6 @@ setup(
         "tensorflow_datasets",
         "ml_collections",
         "wandb",
-        "opencv-python"
+        "opencv-python",
     ],
 )

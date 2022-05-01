@@ -1,13 +1,13 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import wandb
 from absl import app
 from absl import flags
 from absl import logging
 from ml_collections.config_flags import config_flags
 
 import reef_net
+import wandb
 from reef_net.preprocess import preprocess_data
 
 FLAGS = flags.FLAGS
