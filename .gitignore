@@ -1,4 +1,8 @@
 .ipynb_checkpoints
+greatbarrierreef/
+great_barrier_reef/
+wandb/
+artifacts/
 tensorflow-great-barrier-reef.zip
 tensorflow-great-barrier-reef/
 .DS_Store
