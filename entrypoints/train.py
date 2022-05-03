@@ -36,13 +36,15 @@ def get_dataset(config):
 
 
 def get_callbacks(checkpoint_filepath):
-    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath=checkpoint_filepath,
-        monitor="loss",
-        save_freq=10
-        # save_best_only=True
-    )
-    callbacks = [model_checkpoint_callback]
+    callbacks = []
+    if FLAGS.model_dir:
+        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath=os.path.join(FLAGS.model_dir, checkpoint_filepath),
+            monitor="loss",
+            save_freq=10
+            # save_best_only=True
+        )
+        callbacks += [model_checkpoint_callback]
 
     if FLAGS.artifact_dir:
         log_dir = os.path.join(FLAGS.artifact_dir, "logs")
