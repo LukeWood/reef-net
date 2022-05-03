@@ -118,6 +118,27 @@ class RetinaNet(keras.Model):
         self.cls_head = build_head(9 * num_classes, prior_probability)
         self.box_head = build_head(9 * 4, "zeros")
 
+    def train_step(self, data):
+        x, y = data
+
+        with tf.GradientTape() as tape:
+            y_pred = self(x, training=True)
+            loss, clf_loss, box_loss, normalizer = self.loss(y, y_pred)
+            for extra_loss in self.losses:
+                loss += extra_loss
+        self.add_metric(clf_loss, name='clf_loss')
+        self.add_metric(box_loss, name='box_loss')
+        self.add_metric(normalizer, name='normalizer')
+
+        trainable_vars = self.trainable_variables
+        gradients = tape.gradient(loss, trainable_vars)
+        self.optimizer.apply_graidents(zip(gradients, trainable_vars))
+        self.compiled_metrics.update_state(y, y_pred)
+
+        metrics_result = {m.name: m.result() for m in self.metrics}
+        return metric_result
+
+
     def call(self, image, training=False):
         features = self.fpn(image, training=training)
         N = tf.shape(image)[0]
@@ -275,4 +296,4 @@ class RetinaNetLoss(tf.losses.Loss):
         clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
         box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)
         loss = clf_loss + box_loss
-        return loss
+        return (loss, clf_loss, box_loss, normalizer)

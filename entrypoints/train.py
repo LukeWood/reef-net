@@ -94,7 +94,6 @@ def main(args):
     strategy = tf.distribute.MirroredStrategy()
 
     with strategy.scope():
-
         resnet50_backbone = get_backbone()
         # print(resnet50_backbone.summary())
         loss_fn = RetinaNetLoss(config.num_classes)
