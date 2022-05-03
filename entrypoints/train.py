@@ -11,7 +11,6 @@ import wandb
 from reef_net.loaders import load_reef_dataset
 from reef_net.model import DecodePredictions
 from reef_net.model import RetinaNet
-from reef_net.model import RetinaNetLoss
 from reef_net.model import get_backbone
 from reef_net.preprocess import preprocess_data
 from reef_net.preprocess import resize_and_pad_image
@@ -37,13 +36,15 @@ def get_dataset(config):
 
 
 def get_callbacks(checkpoint_filepath):
-    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath=checkpoint_filepath,
-        monitor="loss",
-        save_freq=10
-        # save_best_only=True
-    )
-    callbacks = [model_checkpoint_callback]
+    callbacks = []
+    if FLAGS.model_dir:
+        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath=os.path.join(FLAGS.model_dir, checkpoint_filepath),
+            monitor="loss",
+            save_freq=10
+            # save_best_only=True
+        )
+        callbacks += [model_checkpoint_callback]
 
     if FLAGS.artifact_dir:
         log_dir = os.path.join(FLAGS.artifact_dir, "logs")
@@ -54,6 +55,9 @@ def get_callbacks(checkpoint_filepath):
 
     return callbacks
 
+
+def get_strategy():
+    return tf.distribute.get_strategy()
 
 def main(args):
     del args
@@ -67,8 +71,7 @@ def main(args):
     except:
         pass
 
-    strategy = tf.distribute.MirroredStrategy()
-    logging.info("Number of devices: {}".format(strategy.num_replicas_in_sync))
+    strategy = get_strategy()
 
     if FLAGS.wandb:
         wandb.init(
@@ -92,49 +95,44 @@ def main(args):
     # input_shape = ds.element_spec[0].shape
 
     strategy = tf.distribute.MirroredStrategy()
+    resnet50_backbone = get_backbone()
+    # print(resnet50_backbone.summary())
+    model = RetinaNet(config.num_classes, resnet50_backbone)
 
-    with strategy.scope():
+    optimizer = tf.optimizers.SGD(momentum=0.9)
+    model.compile(
+        optimizer=optimizer,
+        # metrics=[keras_cv.metrics.MeanAveragePrecision()],
+        run_eagerly=True,
+    )
+    model.build((None, None, None, 3))
+    model.summary()
 
-        resnet50_backbone = get_backbone()
-        # print(resnet50_backbone.summary())
-        loss_fn = RetinaNetLoss(config.num_classes)
-        model = RetinaNet(config.num_classes, resnet50_backbone)
+    # datetime object containing current date and time
+    # dd/mm/YY H:M:S
+    now = datetime.now()
+    dt = now.strftime("%d/%m/%Y %H:%M:%S")
+    dt = dt.replace("/", "_", -1)
+    dt = dt.replace(":", "_", -1)
+    dt = dt.replace(" ", "__", -1)
 
-        optimizer = tf.optimizers.SGD(momentum=0.9)
-        model.compile(
-            loss=loss_fn,
-            optimizer=optimizer,
-            # metrics=[keras_cv.metrics.MeanAveragePrecision()],
-            run_eagerly=True,
-        )
-        model.build((None, None, None, 3))
-        model.summary()
+    checkpoint_filepath = os.path.abspath("./models/" + dt + "/model")
+    print("Checkpoint filepath:", checkpoint_filepath)
 
-        # datetime object containing current date and time
-        # dd/mm/YY H:M:S
-        now = datetime.now()
-        dt = now.strftime("%d/%m/%Y %H:%M:%S")
-        dt = dt.replace("/", "_", -1)
-        dt = dt.replace(":", "_", -1)
-        dt = dt.replace(" ", "__", -1)
+    epochs = 100
+    steps_per_epoch = dataset_size / (config.batch_size)
+    if FLAGS.debug:
+        steps_per_epoch = 3
+    model.fit(
+        ds,
+        epochs=epochs,
+        steps_per_epoch=steps_per_epoch,
+        callbacks=get_callbacks(checkpoint_filepath),
+    )
+    print("Fit Done")
 
-        checkpoint_filepath = os.path.abspath("./models/" + dt + "/model")
-        print("Checkpoint filepath:", checkpoint_filepath)
-
-        epochs = 100
-        steps_per_epoch = dataset_size / (config.batch_size)
-        if FLAGS.debug:
-            steps_per_epoch = 3
-        model.fit(
-            ds,
-            epochs=epochs,
-            steps_per_epoch=steps_per_epoch,
-            callbacks=get_callbacks(checkpoint_filepath),
-        )
-        print("Fit Done")
-
-        if FLAGS.model_dir is not None:
-            model.save(FLAGS.model_dir)
+    if FLAGS.model_dir is not None:
+        model.save(FLAGS.model_dir)
 
 
 if __name__ == "__main__":

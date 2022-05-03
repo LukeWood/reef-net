@@ -109,7 +109,7 @@ class RetinaNet(keras.Model):
         Currently supports ResNet50 only.
     """
 
-    def __init__(self, num_classes, backbone=None, **kwargs):
+    def __init__(self, num_classes, backbone=None, alpha=0.25, gamma=2.0, delta=1.0,  **kwargs):
         super(RetinaNet, self).__init__(name="RetinaNet", **kwargs)
         self.fpn = FeaturePyramid(backbone)
         self.num_classes = num_classes
@@ -117,6 +117,62 @@ class RetinaNet(keras.Model):
         prior_probability = tf.constant_initializer(-np.log((1 - 0.01) / 0.01))
         self.cls_head = build_head(9 * num_classes, prior_probability)
         self.box_head = build_head(9 * 4, "zeros")
+        self._clf_loss = RetinaNetClassificationLoss(alpha, gamma)
+        self._box_loss = RetinaNetBoxLoss(delta)
+        self._num_classes = num_classes
+
+        self.clf_loss = tf.keras.metrics.Mean(name='clf_loss')
+        self.box_loss = tf.keras.metrics.Mean(name='box_loss')
+        self.normalizer = tf.keras.metrics.Mean(name='normalizer')
+
+    def train_step(self, data, training=True):
+        x, y = data
+        y_true = y
+
+        with tf.GradientTape() as tape:
+            y_pred = self(x, training=training)
+            y_pred = tf.cast(y_pred, dtype=tf.float32)
+            box_labels = y_true[:, :, :4]
+            box_predictions = y_pred[:, :, :4]
+            cls_labels = tf.one_hot(
+                tf.cast(y_true[:, :, 4], dtype=tf.int32),
+                depth=self._num_classes,
+                dtype=tf.float32,
+            )
+            cls_predictions = y_pred[:, :, 4:]
+            positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)
+            ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
+            clf_loss = self._clf_loss(cls_labels, cls_predictions)
+            box_loss = self._box_loss(box_labels, box_predictions)
+            clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
+            box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)
+            normalizer = tf.reduce_sum(positive_mask, axis=-1)
+            clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
+            box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)
+
+            clf_loss = tf.math.reduce_sum(clf_loss, axis=-1)
+            box_loss = tf.math.reduce_sum(box_loss, axis=-1)
+            loss = clf_loss + box_loss
+
+            for extra_loss in self.losses:
+                loss += extra_loss
+
+        self.clf_loss.update_state(clf_loss)
+        self.box_loss.update_state(box_loss)
+        self.normalizer.update_state(normalizer)
+
+        trainable_vars = self.trainable_variables
+        gradients = tape.gradient(loss, trainable_vars)
+        self.optimizer.apply_gradients(zip(gradients, trainable_vars))
+        self.compiled_metrics.update_state(y, y_pred)
+
+        metrics_result = {m.name: m.result() for m in self.metrics}
+        metrics_result["loss"] = loss
+        return metrics_result
+
+    @property
+    def metrics(self):
+        return [self.clf_loss, self.box_loss, self.normalizer]
 
     def call(self, image, training=False):
         features = self.fpn(image, training=training)
@@ -244,35 +300,3 @@ class RetinaNetClassificationLoss(tf.losses.Loss):
         pt = tf.where(tf.equal(y_true, 1.0), probs, 1 - probs)
         loss = alpha * tf.pow(1.0 - pt, self._gamma) * cross_entropy
         return tf.reduce_sum(loss, axis=-1)
-
-
-class RetinaNetLoss(tf.losses.Loss):
-    """Wrapper to combine both the losses"""
-
-    def __init__(self, num_classes=80, alpha=0.25, gamma=2.0, delta=1.0):
-        super(RetinaNetLoss, self).__init__(reduction="auto", name="RetinaNetLoss")
-        self._clf_loss = RetinaNetClassificationLoss(alpha, gamma)
-        self._box_loss = RetinaNetBoxLoss(delta)
-        self._num_classes = num_classes
-
-    def call(self, y_true, y_pred):
-        y_pred = tf.cast(y_pred, dtype=tf.float32)
-        box_labels = y_true[:, :, :4]
-        box_predictions = y_pred[:, :, :4]
-        cls_labels = tf.one_hot(
-            tf.cast(y_true[:, :, 4], dtype=tf.int32),
-            depth=self._num_classes,
-            dtype=tf.float32,
-        )
-        cls_predictions = y_pred[:, :, 4:]
-        positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)
-        ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
-        clf_loss = self._clf_loss(cls_labels, cls_predictions)
-        box_loss = self._box_loss(box_labels, box_predictions)
-        clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
-        box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)
-        normalizer = tf.reduce_sum(positive_mask, axis=-1)
-        clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
-        box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)
-        loss = clf_loss + box_loss
-        return loss
