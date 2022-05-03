@@ -97,8 +97,8 @@ def main(args):
 
         resnet50_backbone = get_backbone()
         # print(resnet50_backbone.summary())
-        loss_fn = RetinaNetLoss(2)
-        model = RetinaNet(2, resnet50_backbone)
+        loss_fn = RetinaNetLoss(config.num_classes)
+        model = RetinaNet(config.num_classes, resnet50_backbone)
 
         optimizer = tf.optimizers.SGD(momentum=0.9)
         model.compile(
