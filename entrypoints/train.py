@@ -82,8 +82,8 @@ def main(args):
 
     autotune = tf.data.AUTOTUNE
     ds, dataset_size = load_reef_dataset(config, min_boxes_per_image=1)
-    ds = ds.shuffle(config.batch_size * 2)
     ds = ds.map(preprocess_data, num_parallel_calls=autotune)
+    ds = ds.shuffle(config.batch_size * 2)
     ds = ds.repeat()
     ds = ds.padded_batch(
         config.batch_size, padding_values=(0.0, 1e-8, -1), drop_remainder=True
@@ -99,7 +99,14 @@ def main(args):
     # print(resnet50_backbone.summary())
     model = RetinaNet(config.num_classes, resnet50_backbone)
 
-    optimizer = tf.optimizers.SGD(momentum=0.9)
+    
+    learning_rates = [2.5e-06, 0.000625, 0.00125, 0.0025, 0.00025, 2.5e-05]
+    learning_rate_boundaries = [125, 250, 500, 240000, 360000]
+    learning_rate_fn = tf.optimizers.schedules.PiecewiseConstantDecay(
+        boundaries=learning_rate_boundaries, values=learning_rates
+    )
+
+    optimizer = tf.optimizers.SGD(learning_rate=learning_rate_fn, momentum=0.9)
     model.compile(
         optimizer=optimizer,
         # metrics=[keras_cv.metrics.MeanAveragePrecision()],
