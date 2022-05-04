@@ -73,7 +73,10 @@ def resize_and_pad_image(
     return image, image_shape, ratio
 
 
-def convert_xywh_to_corners_percentage(annotations, image_shape):
+def convert_xywh_to_corners_percentage(annotations, image):
+    # image shape
+    image_shape = tf.cast(tf.shape(image)[:2], dtype=tf.float32)
+
     # annotations.shape = [num_boxes, 4]
     x = annotations[:, 0]
     y = annotations[:, 1]
@@ -88,18 +91,29 @@ def convert_xywh_to_corners_percentage(annotations, image_shape):
     y2 = y + (h / height)
 
     result = tf.stack([x, y, x2, y2], axis=-1)
-    return result
+    return result, image_shape
 
 
 def preprocess_data(image, annotations, class_id):
-    image_shape = tf.shape(image)
-    bbox = convert_xywh_to_corners_percentage(annotations, image_shape)
+    """Applies preprocessing step to a single sample
 
-    # image, bbox = random_flip_horizontal(image, bbox)
+    Arguments:
+        sample: A dict representing a single training sample.
 
+    Returns:
+        image: Resized and padded image with random horizontal flipping applied.
+        bbox: Bounding boxes with the shape `(num_objects, 4)` where each box is
+            of the format `[x, y, width, height]`.
+        class_id: An tensor representing the class id of the objects, having
+            shape `(num_objects,)`.
+    """
     # [0, 100, 32, 32] -> absolute pixels
     # [0.2, 0.3, 0.01, 0.01] -> percentage of the input shape
+    bbox, image_shape = convert_xywh_to_corners_percentage(annotations, image)
+    # bbox = swap_xy(bbox) # Swap_xy makes this go Nan as of now I suppose
+    image, bbox = random_flip_horizontal(image, bbox)
     image, image_shape, _ = resize_and_pad_image(image)
+
     bbox = tf.stack(
         [
             bbox[:, 0] * image_shape[1],
@@ -109,5 +123,5 @@ def preprocess_data(image, annotations, class_id):
         ],
         axis=-1,
     )
-    bbox = convert_to_xywh(bbox)
+    # bbox = convert_to_xywh(bbox)
     return image, bbox, class_id
