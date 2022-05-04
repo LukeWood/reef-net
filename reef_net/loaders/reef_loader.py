@@ -52,7 +52,7 @@ def decode_img(img):
     # return tf.image.resize(img, [img_height, img_width])
 
 
-def load_reef_dataset(config, min_boxes_per_image=0):
+def load_reef_dataset(config, min_boxes_per_image=1):
     base_path = config.data_path
     csv_path = os.path.abspath(os.path.join(base_path, "train.csv"))
     image_base_path = os.path.abspath(os.path.join(base_path, "train_images"))
@@ -72,7 +72,7 @@ def load_reef_dataset(config, min_boxes_per_image=0):
     df["num_bboxes"] = df["boxes"].apply(lambda x: len(x))
     max_boxes = df["num_bboxes"].max()
 
-    # if min_boxes_per_image != 0:
+    # get subset of df with images containing at least 1 bounding box
     df = df[df["num_bboxes"] >= min_boxes_per_image]
 
     image_paths = df["image_path"]

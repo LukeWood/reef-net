@@ -109,7 +109,7 @@ class RetinaNet(keras.Model):
         Currently supports ResNet50 only.
     """
 
-    def __init__(self, num_classes, backbone=None, alpha=0.25, gamma=2.0, delta=1.0,  **kwargs):
+    def __init__(self, num_classes, backbone=None, alpha=0.25, gamma=2.0, delta=1.0, **kwargs):
         super(RetinaNet, self).__init__(name="RetinaNet", **kwargs)
         self.fpn = FeaturePyramid(backbone)
         self.num_classes = num_classes
@@ -124,6 +124,9 @@ class RetinaNet(keras.Model):
         self.clf_loss = tf.keras.metrics.Mean(name='clf_loss')
         self.box_loss = tf.keras.metrics.Mean(name='box_loss')
         self.normalizer = tf.keras.metrics.Mean(name='normalizer')
+        self.bg_count = tf.keras.metrics.Mean(name='bg_count')
+        self.pad_count = tf.keras.metrics.Mean(name='pad_count')
+        self.starfish_count = tf.keras.metrics.Mean(name='starfish_count')
 
     def train_step(self, data, training=True):
         x, y = data
@@ -157,6 +160,18 @@ class RetinaNet(keras.Model):
             for extra_loss in self.losses:
                 loss += extra_loss
 
+        # metrics for class counts: background, padding boxes, starfish
+        bg_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
+        bg_count = tf.reduce_sum(bg_mask, axis=-1)
+        pad_mask = tf.cast(tf.equal(y_true[:, :, 4], -1.0), dtype=tf.float32)
+        pad_count = tf.reduce_sum(pad_mask, axis=-1)
+        sf_mask = tf.cast(tf.equal(y_true[:, :, 4], 0.0), dtype=tf.float32)
+        starfish_count = tf.reduce_sum(sf_mask, axis=-1)
+
+        self.bg_count.update_state(bg_count)
+        self.pad_count.update_state(pad_count)
+        self.starfish_count.update_state(starfish_count)
+
         self.clf_loss.update_state(clf_loss)
         self.box_loss.update_state(box_loss)
         self.normalizer.update_state(normalizer)
@@ -172,7 +187,8 @@ class RetinaNet(keras.Model):
 
     @property
     def metrics(self):
-        return [self.clf_loss, self.box_loss, self.normalizer]
+        return [self.clf_loss, self.box_loss, self.normalizer,
+                self.bg_count, self.pad_count, self.starfish_count]
 
     def call(self, image, training=False):
         features = self.fpn(image, training=training)
@@ -208,14 +224,14 @@ class DecodePredictions(tf.keras.layers.Layer):
     """
 
     def __init__(
-        self,
-        num_classes=80,
-        confidence_threshold=0.05,
-        nms_iou_threshold=0.5,
-        max_detections_per_class=100,
-        max_detections=100,
-        box_variance=[0.1, 0.1, 0.2, 0.2],
-        **kwargs
+            self,
+            num_classes=80,
+            confidence_threshold=0.05,
+            nms_iou_threshold=0.5,
+            max_detections_per_class=100,
+            max_detections=100,
+            box_variance=[0.1, 0.1, 0.2, 0.2],
+            **kwargs
     ):
         super(DecodePredictions, self).__init__(**kwargs)
         self.num_classes = num_classes
@@ -272,7 +288,7 @@ class RetinaNetBoxLoss(tf.losses.Loss):
     def call(self, y_true, y_pred):
         difference = y_true - y_pred
         absolute_difference = tf.abs(difference)
-        squared_difference = difference**2
+        squared_difference = difference ** 2
         loss = tf.where(
             tf.less(absolute_difference, self._delta),
             0.5 * squared_difference,

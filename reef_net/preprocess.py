@@ -92,14 +92,20 @@ def convert_xywh_to_corners_percentage(annotations, image_shape):
 
 
 def preprocess_data(image, annotations, class_id):
+    """
+
+    :param image:
+    :param annotations: [x, y, w, h] in pixels
+    :param class_id:
+    :return:
+    """
     image_shape = tf.shape(image)
-    bbox = convert_xywh_to_corners_percentage(annotations, image_shape)
+    bbox = convert_xywh_to_corners_percentage(annotations, image_shape)  # [x,y,x2,y2] in relative
 
-    # image, bbox = random_flip_horizontal(image, bbox)
-
-    # [0, 100, 32, 32] -> absolute pixels
-    # [0.2, 0.3, 0.01, 0.01] -> percentage of the input shape
+    bbox = swap_xy(bbox)
+    image, bbox = random_flip_horizontal(image, bbox)
     image, image_shape, _ = resize_and_pad_image(image)
+
     bbox = tf.stack(
         [
             bbox[:, 0] * image_shape[1],
@@ -109,5 +115,5 @@ def preprocess_data(image, annotations, class_id):
         ],
         axis=-1,
     )
-    bbox = convert_to_xywh(bbox)
+    bbox = convert_to_xywh(bbox)  # [x_center, y_center, w, h] in relative
     return image, bbox, class_id
