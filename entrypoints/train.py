@@ -35,7 +35,7 @@ def get_callbacks(checkpoint_filepath):
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_filepath,
             monitor="loss",
-            save_freq=10
+            save_freq="epoch"
             # save_best_only=True
         )
         callbacks += [model_checkpoint_callback]
@@ -120,7 +120,7 @@ def main(args):
     checkpoint_filepath = os.path.abspath("./models/" + dt + "/model")
     print("Checkpoint filepath:", checkpoint_filepath)
 
-    epochs = 100
+    epochs = 20
     steps_per_epoch = dataset_size / (config.batch_size)
     if FLAGS.debug:
         steps_per_epoch = 3
