@@ -26,9 +26,6 @@ flags.DEFINE_bool("model_dir", False, "Where to save the model after training")
 
 FLAGS = flags.FLAGS
 
-
-
-
 def get_callbacks(checkpoint_filepath):
     callbacks = []
     if FLAGS.model_dir:
