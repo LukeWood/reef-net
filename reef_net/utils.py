@@ -88,7 +88,7 @@ def visualize_detections(
     image, boxes, classes, scores, figsize=(7, 7), linewidth=1, color=[0, 0, 1]
 ):
     """Visualize Detections"""
-    image = cv2.normalize(image, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+    # image = cv2.normalize(image, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
     image = np.array(image, dtype=np.uint8)
     plt.figure(figsize=figsize)
     plt.axis("off")
