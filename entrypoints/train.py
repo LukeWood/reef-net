@@ -53,6 +53,20 @@ def get_callbacks(checkpoint_filepath):
 def get_strategy():
     return tf.distribute.MirroredStrategy()
 
+def get_checkpoint_path():
+    # datetime object containing current date and time
+    # dd/mm/YY H:M:S
+    now = datetime.now()
+    dt = now.strftime("%d/%m/%Y %H:%M:%S")
+    dt = dt.replace("/", "_", -1)
+    dt = dt.replace(":", "_", -1)
+    dt = dt.replace(" ", "__", -1)
+
+    checkpoint_filepath = os.path.abspath("./models/" + dt + "/model")
+    print("Checkpoint filepath:", checkpoint_filepath)
+
+    return checkpoint_filepath
+
 def main(args):
     del args
     config = FLAGS.config
@@ -75,18 +89,35 @@ def main(args):
         )
 
     autotune = tf.data.AUTOTUNE
-    ds, dataset_size = load_reef_dataset(config, min_boxes_per_image=1)
-    ds = ds.map(preprocess_data, num_parallel_calls=autotune)
-    ds = ds.shuffle(config.batch_size * 2)
-    ds = ds.repeat()
-    ds = ds.padded_batch(
-        config.batch_size, padding_values=(0.0, 1e-8, -1), drop_remainder=True
-    )
-
     label_encoder = LabelEncoder()
-    ds = ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
-    ds = ds.apply(tf.data.experimental.ignore_errors())
-    # input_shape = ds.element_spec[0].shape
+
+    ########## ---------- XXXXXXXXXX ---------- ##########
+    # This is for training data
+    base_path = config.custom_path
+    train_path = os.path.abspath(os.path.join(base_path, config.train_path))
+    train_ds, train_dataset_size = load_reef_dataset(config, train_path, min_boxes_per_image=1)
+    train_ds = train_ds.map(preprocess_data, num_parallel_calls=autotune)
+    train_ds = train_ds.shuffle(config.batch_size*8)
+    train_ds = train_ds.repeat()
+    train_ds = train_ds.padded_batch(config.batch_size, padding_values=(0.0, 1e-8, -1), drop_remainder=True)
+    
+    train_ds = train_ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
+    train_ds = train_ds.apply(tf.data.experimental.ignore_errors())
+    train_ds = train_ds.prefetch(autotune) # This line is added
+
+    ########## ---------- XXXXXXXXXX ---------- ##########
+    # This is for validation dataset
+    base_path = config.custom_path
+    val_path = os.path.abspath(os.path.join(base_path, config.val_path))
+    val_ds, val_dataset_size = load_reef_dataset(config, val_path, min_boxes_per_image=1)
+    val_ds = val_ds.map(preprocess_data, num_parallel_calls=autotune)
+    val_ds = val_ds.shuffle(config.batch_size*8)
+    val_ds = val_ds.repeat()
+    val_ds = val_ds.padded_batch(config.batch_size, padding_values=(0.0, 1e-8, -1), drop_remainder=True)
+
+    val_ds = val_ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
+    val_ds = val_ds.apply(tf.data.experimental.ignore_errors())
+    val_ds = val_ds.prefetch(autotune) # This line is added
 
     strategy = tf.distribute.MirroredStrategy()
     resnet50_backbone = get_backbone()
@@ -103,32 +134,25 @@ def main(args):
     optimizer = tf.optimizers.SGD(learning_rate=learning_rate_fn, momentum=0.9)
     model.compile(
         optimizer=optimizer,
-        # metrics=[keras_cv.metrics.MeanAveragePrecision()],
-        run_eagerly=FLAGS.debug,
+        # run_eagerly=FLAGS.debug,
+        run_eagerly=True
     )
     model.build((None, None, None, 3))
     model.summary()
 
-    # datetime object containing current date and time
-    # dd/mm/YY H:M:S
-    now = datetime.now()
-    dt = now.strftime("%d/%m/%Y %H:%M:%S")
-    dt = dt.replace("/", "_", -1)
-    dt = dt.replace(":", "_", -1)
-    dt = dt.replace(" ", "__", -1)
-
-    checkpoint_filepath = os.path.abspath("./models/" + dt + "/model")
-    print("Checkpoint filepath:", checkpoint_filepath)
-
+    
+    checkpoint_filepath = get_checkpoint_path()
     epochs = 20
-    steps_per_epoch = dataset_size / (config.batch_size)
+    steps_per_epoch = train_dataset_size / (config.batch_size)
     if FLAGS.debug:
+        epochs = 100
         steps_per_epoch = 3
     model.fit(
-        ds,
+        train_ds,
+        validation_data=val_ds,
         epochs=epochs,
-        steps_per_epoch=steps_per_epoch,
         callbacks=get_callbacks(checkpoint_filepath),
+        verbose=1,
     )
     print("Fit Done")
 
