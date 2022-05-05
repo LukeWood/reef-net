@@ -23,7 +23,15 @@ setup(
         "absl-py",
         "tensorflow_datasets",
         "ml_collections",
-        "wandb",
         "opencv-python",
+        "pandas",
+        "pyyaml",
+        "tqdm",
+        "contextlib2",
+        "matplotlib",
+        "click",
+        "wandb",
+        "tensorflow-metadata",
+        "dill"
     ],
 )
