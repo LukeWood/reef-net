@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,6 +12,7 @@ import reef_net
 import wandb
 from reef_net.preprocess import preprocess_data
 from reef_net.utils import visualize_detections
+from reef_net.utils import convert_to_corners
 
 
 
@@ -35,12 +37,12 @@ def visualize_bounding_boxes(img, annotations, category):
 
 def main(args):
     config = FLAGS.config
-    ds, dataset_size = reef_net.loaders.load_reef_dataset(config, min_boxes_per_image=5)
+    base_path = config.data_path
+    csv_path = os.path.abspath(os.path.join(base_path, config.train_path))
+    ds, dataset_size = reef_net.loaders.load_reef_dataset(config, csv_path, min_boxes_per_image=5)
 
     ds = ds.shuffle(1)
-    # print("Preprocess Data")
     ds = ds.map(preprocess_data)
-    # print("Processed")
 
     (image, bounding_boxes, category) = next(iter(ds.take(1)))
     image, bounding_boxes, category = (
@@ -54,17 +56,13 @@ def main(args):
     # Temp
     scores = [[0.99] * bounding_boxes.shape[0]]
     scores = np.concatenate(scores).flat
-    
-    # image = visualize_bounding_boxes(image, bounding_boxes, category)
-    # plt.figure(figsize=(10, 10))
-    # plt.imshow(image / 255.0)
-    # plt.axis("off")
-    # plt.show()
+
     # img_h, img_w, _ = image.shape
-    # bounding_boxes[:, 0] = bounding_boxes[:, 0] * img_h
-    # bounding_boxes[:, 1] = bounding_boxes[:, 1] * img_w
-    # bounding_boxes[:, 2] = bounding_boxes[:, 2] * img_h
-    # bounding_boxes[:, 3] = bounding_boxes[:, 3] * img_w
+    # annotation = np.zeros(bounding_boxes.shape)
+    # annotation[:, 1] = bounding_boxes[:, 0] * img_h
+    # annotation[:, 0] = bounding_boxes[:, 1] * img_w
+    # annotation[:, 3] = bounding_boxes[:, 2] * img_h
+    # annotation[:, 2] = bounding_boxes[:, 3] * img_w
 
     visualize_detections(image, bounding_boxes, category, scores, figsize=(7, 7), linewidth=1, color=[0, 0, 1])
 
