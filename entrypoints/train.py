@@ -27,12 +27,6 @@ flags.DEFINE_bool("model_dir", False, "Where to save the model after training")
 FLAGS = flags.FLAGS
 
 
-def get_dataset(config):
-    if config.dataset == "cifar10":
-        return cifar10_ssl_loader.prepare_autoencoder_datasets(config)
-    elif config.dataset == "mnist":
-        return mnist_loader.prepare_autoencoder_datasets(config)
-    raise ValueError(f"Unsupported dataset in `get_dataset`, got={config.dataset}")
 
 
 def get_callbacks(checkpoint_filepath):
@@ -57,7 +51,7 @@ def get_callbacks(checkpoint_filepath):
 
 
 def get_strategy():
-    return tf.distribute.get_strategy()
+    return tf.distribute.MirroredStrategy()
 
 def main(args):
     del args
@@ -99,7 +93,7 @@ def main(args):
     # print(resnet50_backbone.summary())
     model = RetinaNet(config.num_classes, resnet50_backbone)
 
-    
+
     learning_rates = [2.5e-06, 0.000625, 0.00125, 0.0025, 0.00025, 2.5e-05]
     learning_rate_boundaries = [125, 250, 500, 240000, 360000]
     learning_rate_fn = tf.optimizers.schedules.PiecewiseConstantDecay(
