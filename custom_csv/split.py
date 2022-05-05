@@ -17,8 +17,8 @@ with open("train.csv", "w") as train:
     for line in train_indices:
         train.write(lines[line])
 
-with open("test.csv", "w") as test:
-    test.write(header)
+with open("val.csv", "w") as val:
+    val.write(header)
     for line in test_indices:
-        test.write(lines[line])
+        val.write(lines[line])
 
