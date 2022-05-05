@@ -3,6 +3,7 @@ import tensorflow as tf
 from tensorflow import keras
 
 from reef_net.utils import convert_to_xywh
+from reef_net.utils import convert_to_corners
 from reef_net.utils import swap_xy
 
 
@@ -94,7 +95,7 @@ def convert_xywh_to_corners_percentage(annotations, image):
     return result, image_shape
 
 
-def preprocess_data(image, annotations, class_id):
+def preprocess_data(image, bbox, class_id):
     """Applies preprocessing step to a single sample
 
     Arguments:
@@ -109,8 +110,10 @@ def preprocess_data(image, annotations, class_id):
     """
     # [0, 100, 32, 32] -> absolute pixels
     # [0.2, 0.3, 0.01, 0.01] -> percentage of the input shape
-    bbox, image_shape = convert_xywh_to_corners_percentage(annotations, image)
-    # bbox = swap_xy(bbox) # Swap_xy makes this go Nan as of now I suppose
+    # bbox, image_shape = convert_xywh_to_corners_percentage(annotations, image)
+    bbox = swap_xy(bbox) # Swap_xy makes this go Nan as of now I suppose
+    class_id = tf.cast(class_id, dtype=tf.int32)
+
     image, bbox = random_flip_horizontal(image, bbox)
     image, image_shape, _ = resize_and_pad_image(image)
 
@@ -124,4 +127,6 @@ def preprocess_data(image, annotations, class_id):
         axis=-1,
     )
     bbox = convert_to_xywh(bbox)
+    
+    bbox = convert_to_corners(bbox)
     return image, bbox, class_id
