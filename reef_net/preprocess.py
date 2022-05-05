@@ -123,5 +123,5 @@ def preprocess_data(image, annotations, class_id):
         ],
         axis=-1,
     )
-    # bbox = convert_to_xywh(bbox)
+    bbox = convert_to_xywh(bbox)
     return image, bbox, class_id
