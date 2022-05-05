@@ -22,7 +22,7 @@ config_flags.DEFINE_config_file("config", "configs/main.py")
 flags.DEFINE_bool("wandb", False, "Whether to run to wandb")
 flags.DEFINE_bool("debug", False, "Whether or not to use extra debug utilities")
 flags.DEFINE_string("artifact_dir", None, "Directory to store artifacts")
-flags.DEFINE_string("model_dir", None, "Where to save the model after training")
+flags.DEFINE_bool("model_dir", False, "Where to save the model after training")
 
 FLAGS = flags.FLAGS
 
@@ -39,7 +39,7 @@ def get_callbacks(checkpoint_filepath):
     callbacks = []
     if FLAGS.model_dir:
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-            filepath=os.path.join(FLAGS.model_dir, checkpoint_filepath),
+            filepath=checkpoint_filepath,
             monitor="loss",
             save_freq=10
             # save_best_only=True
@@ -110,7 +110,7 @@ def main(args):
     model.compile(
         optimizer=optimizer,
         # metrics=[keras_cv.metrics.MeanAveragePrecision()],
-        run_eagerly=True,
+        run_eagerly=FLAGS.debug,
     )
     model.build((None, None, None, 3))
     model.summary()
@@ -138,8 +138,8 @@ def main(args):
     )
     print("Fit Done")
 
-    if FLAGS.model_dir is not None:
-        model.save(FLAGS.model_dir)
+    if FLAGS.model_dir:
+        model.save(checkpoint_filepath)
 
 
 if __name__ == "__main__":
