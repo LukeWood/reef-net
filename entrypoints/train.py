@@ -52,7 +52,7 @@ def get_callbacks(checkpoint_filepath):
 
 
 def get_strategy():
-    return tf.distribute.get_strategy()
+    return tf.distribute.MirroredStrategy()
 
 def main(args):
     del args
