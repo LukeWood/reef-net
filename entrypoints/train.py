@@ -94,7 +94,7 @@ def main(args):
     # print(resnet50_backbone.summary())
     model = RetinaNet(config.num_classes, resnet50_backbone)
 
-    
+
     learning_rates = [2.5e-06, 0.000625, 0.00125, 0.0025, 0.00025, 2.5e-05]
     learning_rate_boundaries = [125, 250, 500, 240000, 360000]
     learning_rate_fn = tf.optimizers.schedules.PiecewiseConstantDecay(
@@ -105,7 +105,7 @@ def main(args):
     model.compile(
         optimizer=optimizer,
         # metrics=[keras_cv.metrics.MeanAveragePrecision()],
-        run_eagerly=True,
+        run_eagerly=FLAGS.debug,
     )
     model.build((None, None, None, 3))
     model.summary()
