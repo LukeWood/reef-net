@@ -52,9 +52,9 @@ def decode_img(img):
     # return tf.image.resize(img, [img_height, img_width])
 
 
-def load_reef_dataset(config, min_boxes_per_image=0):
+def load_reef_dataset(config, csv_path, min_boxes_per_image=0):
     base_path = config.data_path
-    csv_path = os.path.abspath(os.path.join(base_path, "train.csv"))
+    # csv_path = os.path.abspath(os.path.join(base_path, "train.csv"))
     image_base_path = os.path.abspath(os.path.join(base_path, "train_images"))
 
     df = pd.read_csv(csv_path)
@@ -82,10 +82,22 @@ def load_reef_dataset(config, min_boxes_per_image=0):
         for image_path, annotations in zip(image_paths, boxes):
             img = cv2.imread(image_path)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
+            # img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+
+            ########## ---------- XXXXXXXXXX ---------- ##########
+            # Changing the structure of annotations to match the annotations of the COCO Dataset
+            # if min_boxes_per_image != 0:
+            img_h, img_w, _ = img.shape
             annotations = np.array(annotations)
-            category = [[0] * annotations.shape[0]]
+            bbox = np.zeros(annotations.shape)
+            bbox[:, 0] = annotations[:, 1] / img_h
+            bbox[:, 1] = annotations[:, 0] / img_w
+            bbox[:, 2] = (annotations[:, 3]+annotations[:, 1]) / img_h
+            bbox[:, 3] = (annotations[:, 2]+annotations[:, 0])/ img_w
+
+            category = [[0] * np.array(annotations).shape[0]]
             category = list(np.concatenate(category).flat)
-            yield (img, annotations, category)
+            yield (img, bbox, category)
 
     return tf.data.Dataset.from_generator(
         dataset_generator,
