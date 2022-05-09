@@ -102,7 +102,6 @@ def preprocess_data(image, annotations, class_id):
     image_shape = tf.shape(image)
     bbox = convert_xywh_to_corners_percentage(annotations, image_shape)  # [x,y,x2,y2] in relative
 
-    bbox = swap_xy(bbox)
     image, bbox = random_flip_horizontal(image, bbox)
     image, image_shape, _ = resize_and_pad_image(image)
 

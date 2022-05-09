@@ -143,12 +143,12 @@ class RetinaNet(keras.Model):
                 dtype=tf.float32,
             )
             cls_predictions = y_pred[:, :, 4:]
-            positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)
-            ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
+            positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)  # starfish class
+            ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)  # background class
             clf_loss = self._clf_loss(cls_labels, cls_predictions)
             box_loss = self._box_loss(box_labels, box_predictions)
-            clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
-            box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)
+            clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)  # indices identified as bg class get assigned clf_loss
+            box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)  # indices identified as starfish class get assigned box_loss
             normalizer = tf.reduce_sum(positive_mask, axis=-1)
             clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
             box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)

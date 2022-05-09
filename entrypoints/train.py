@@ -27,14 +27,6 @@ flags.DEFINE_string("model_dir", None, "Where to save the model after training")
 FLAGS = flags.FLAGS
 
 
-def get_dataset(config):
-    if config.dataset == "cifar10":
-        return cifar10_ssl_loader.prepare_autoencoder_datasets(config)
-    elif config.dataset == "mnist":
-        return mnist_loader.prepare_autoencoder_datasets(config)
-    raise ValueError(f"Unsupported dataset in `get_dataset`, got={config.dataset}")
-
-
 def get_callbacks(checkpoint_filepath):
     callbacks = []
     if FLAGS.model_dir:
