@@ -63,8 +63,6 @@ a dataset into a `tf.data.Dataset` object.  This data pipeline tends to be prett
 to work with and very easy to distribute/parallelize which will save us time in the
 long run.
 
-Harsh can give this a try.
-
 ### Preprocess
 
 We can use the `albumnations` library to augment images with bounding boxes.
