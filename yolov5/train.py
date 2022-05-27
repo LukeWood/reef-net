@@ -23,8 +23,9 @@ REMOVE_NOBBOX = True  # remove images with no bbox
 
 def config(train_df, valid_df):
 
-    cwd = '/working/'
+    cwd = './working/'
 
+    print('os.path', os.path.join(cwd, 'train.txt'))
     with open(os.path.join(cwd, 'train.txt'), 'w') as f:
         for path in train_df.image_path.tolist():
             f.write(path + '\n')
@@ -34,7 +35,7 @@ def config(train_df, valid_df):
             f.write(path + '\n')
 
     data = dict(
-        path='/working',
+        path='./working',
         train=os.path.join(cwd, 'train.txt'),
         val=os.path.join(cwd, 'val.txt'),
         nc=1,
@@ -74,16 +75,28 @@ def main(argv):
     # Configuration
     config(train_df, valid_df)
 
-    # yolov5
-    # %cd / kaggle / working
-    # !rm - r / kaggle / working / yolov5
-    # # !git clone https://github.com/ultralytics/yolov5 # clone
-    # !cp - r / kaggle / input / yolov5 - lib - ds / kaggle / working / yolov5
-    # % cd
-    # yolov5
-    # % pip
-    # install - qr
-    # requirements.txt  # install
+    # # yolov5
+    # %cd /working
+    # !rm - r /working/yolov5
+    # # !git clone https://github.com/ultralytics/yolov5  # clone
+    # !cp - r /input/yolov5-lib-ds /working/yolov5
+    # %cd yolov5
+    # %pip install -qr requirements.txt  # install
 
+    # # Training
+    # !python train.py --img {DIM}\
+    # --batch {BATCH}\
+    # --epochs {EPOCHS}\
+    # --optimizer {OPTMIZER}\
+    # --data /working/gbr.yaml\
+    # --hyp /working/hyp.yaml\
+    # --weights {MODEL}.pt\
+    # --project {PROJECT} --name {NAME}\
+    # --exist-ok
 
-app.run(main)
+    # # Output files
+    # OUTPUT_DIR = '{}/{}'.format(PROJECT, NAME)
+    # # !ls {OUTPUT_DIR}
+
+if __name__ == "__main__":
+    app.run(main)
