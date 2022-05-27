@@ -88,6 +88,6 @@ def main(argv):
     df = get_df()
     write_annotations(df)
 
-
-app.run(main)
+if __name__ == "__main__":
+    app.run(main)
 # python .\prepare_dataset.py --data_dir ..\tensorflow-great-barrier-reef\
