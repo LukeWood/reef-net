@@ -4,7 +4,7 @@ import ml_collections
 def get_config() -> ml_collections.ConfigDict:
     config = ml_collections.ConfigDict()
     config.wandb_project_name = "reef-net"
-    config.data_path = "tensorflow-great-barrier-reef"
+    config.data_path = "../tensorflow-great-barrier-reef"
     config.custom_path = "custom_csv"
     config.train_path = "train.csv"
     config.val_path = "val.csv"
