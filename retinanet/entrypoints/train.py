@@ -97,13 +97,8 @@ def main(args):
     train_ds = train_ds.shuffle(config.batch_size*8)
     train_ds = train_ds.repeat()
     train_ds = train_ds.padded_batch(config.batch_size, padding_values=(0.0, 1e-8, -1), drop_remainder=True)
-    
+
     train_ds = train_ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
-    print(train_ds)
-    for batch in train_ds.take(1):
-        print(batch[0].shape)
-        print(batch[1].shape)
-    input()
     train_ds = train_ds.apply(tf.data.experimental.ignore_errors())
     train_ds = train_ds.prefetch(autotune) # This line is added
 
@@ -142,7 +137,7 @@ def main(args):
     model.build((None, None, None, 3))
     model.summary()
 
-    
+
     checkpoint_filepath = get_checkpoint_path()
     epochs = 20
     steps_per_epoch = train_dataset_size / (config.batch_size)
