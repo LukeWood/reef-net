@@ -92,7 +92,11 @@ def main(argv):
     # --hyp /working/hyp.yaml\
     # --weights {MODEL}.pt\
     # --project {PROJECT} --name {NAME}\
-    # --exist-ok
+    # --exist-
+
+    # RUN:
+    # python train.py --img 3000 --batch 4 --epochs 7 --optimizer 'Adam' --data /working/gbr.yaml --hyp /working/hyp.
+    # yaml --weights yolov5s6.pt --project 'great-barrier-reef-public' --name 'yolov5s6-dim3000-fold1' --exist-ok
 
     # # Output files
     # OUTPUT_DIR = '{}/{}'.format(PROJECT, NAME)
