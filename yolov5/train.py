@@ -77,9 +77,9 @@ def main(argv):
 
     # # yolov5
     # %cd /working
-    # !rm - r /working/yolov5
+    # !rm -r /working/yolov5
     # # !git clone https://github.com/ultralytics/yolov5  # clone
-    # !cp - r /input/yolov5-lib-ds /working/yolov5
+    # !cp -r /input/yolov5-lib-ds /working/yolov5
     # %cd yolov5
     # %pip install -qr requirements.txt  # install
 
