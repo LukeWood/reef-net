@@ -123,8 +123,7 @@ class RetinaNet(keras.Model):
 
         self.clf_loss = tf.keras.metrics.Mean(name='clf_loss')
         self.box_loss = tf.keras.metrics.Mean(name='box_loss')
-        self.gradients_before_clip = tf.keras.metrics.Mean(name='gradients_before_clip')
-        self.gradients_after_clip = tf.keras.metrics.Mean(name='gradients_after_clip')
+        self.gradient_norm = tf.keras.metrics.Mean(name='gradient_norm')
         self.normalizer = tf.keras.metrics.Mean(name='normalizer')
 
     def train_step(self, data, training=True):
@@ -167,7 +166,8 @@ class RetinaNet(keras.Model):
 
         gradients = tape.gradient(loss, trainable_vars)
         # clip grads to prevent explosion
-        gradients, _ = tf.clip_by_global_norm(gradients, 5.0)
+        gradients, global_norm = tf.clip_by_global_norm(gradients, 5.0)
+        self.gradient_norm.update_state(gradient_norm)
 
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
         self.compiled_metrics.update_state(y, y_pred)
