@@ -178,7 +178,7 @@ class RetinaNet(keras.Model):
 
     @property
     def metrics(self):
-        return [self.clf_loss, self.box_loss, self.normalizer]
+        return [self.clf_loss, self.box_loss, self.normalizer, self.gradient_norm]
 
     def call(self, image, training=False):
         features = self.fpn(image, training=training)
