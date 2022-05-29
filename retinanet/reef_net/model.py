@@ -166,7 +166,7 @@ class RetinaNet(keras.Model):
 
         gradients = tape.gradient(loss, trainable_vars)
         # clip grads to prevent explosion
-        gradients, global_norm = tf.clip_by_global_norm(gradients, 5.0)
+        gradients, gradient_norm = tf.clip_by_global_norm(gradients, 5.0)
         self.gradient_norm.update_state(gradient_norm)
 
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
