@@ -141,14 +141,17 @@ def main(args):
 
 
     checkpoint_filepath = get_checkpoint_path()
-    epochs = 20
-    steps_per_epoch = train_dataset_size / (config.batch_size)
+    epochs = 100
+    steps_per_epoch = 1000 # train_dataset_size // (config.batch_size)
     if FLAGS.debug:
         epochs = 100
         steps_per_epoch = 3
+    print('Steps per epoch', steps_per_epoch)
     model.fit(
         train_ds,
         validation_data=val_ds,
+        steps_per_epoch=steps_per_epoch
+        validation_steps=100,
         epochs=epochs,
         callbacks=get_callbacks(checkpoint_filepath),
         verbose=1,

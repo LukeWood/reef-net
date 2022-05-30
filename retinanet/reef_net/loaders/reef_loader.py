@@ -47,7 +47,8 @@ def load_image(self, idx):
 
 def decode_img(img):
     # Convert the compressed string to a 3D uint8 tensor
-    return tf.io.decode_jpeg(img, channels=3)
+    file = tf.io.read_file(img)
+    return tf.io.decode_jpeg(file, channels=3)
     # Resize the image to the desired size
     # return tf.image.resize(img, [img_height, img_width])
 
