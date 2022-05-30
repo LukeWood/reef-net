@@ -8,6 +8,7 @@ from reef_net.loaders import load_reef_dataset
 from reef_net.utils import AnchorBox
 from reef_net.utils import convert_to_corners
 
+import keras_cv
 
 # --- Building the ResNet50 backbone ---
 def get_backbone():
@@ -126,8 +127,16 @@ class RetinaNet(keras.Model):
         self.gradient_norm = tf.keras.metrics.Mean(name='gradient_norm')
         self.normalizer = tf.keras.metrics.Mean(name='normalizer')
 
+        self.mean_average_precision = keras_cv.metrics.COCOMeanAveragePrecision(
+                max_detections=100,
+                class_ids=range(num_classes+1)
+        )
+
+        self.decoder = DecodePredictions(num_classes=num_classes)
+
     def train_step(self, data, training=True):
         x, y = data
+        x = tf.cast(x, dtype=tf.float32)
         y_true = y
 
         with tf.GradientTape() as tape:
@@ -160,7 +169,6 @@ class RetinaNet(keras.Model):
 
         self.clf_loss.update_state(clf_loss)
         self.box_loss.update_state(box_loss)
-        self.normalizer.update_state(normalizer)
 
         trainable_vars = self.trainable_variables
 
@@ -172,13 +180,29 @@ class RetinaNet(keras.Model):
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
         self.compiled_metrics.update_state(y, y_pred)
 
+        decoded = self.decoder(x, y_pred)
+        boxes_recombined = tf.concat(
+            [
+                decoded.nmsed_boxes,
+                tf.expand_dims(decoded.nmsed_classes, axis=-1),
+                tf.expand_dims(decoded.nmsed_scores, axis=-1)
+            ],
+        axis=-1)
+
+        self.mean_average_precision.update_state(y, boxes_recombined)
+
         metrics_result = {m.name: m.result() for m in self.metrics}
         metrics_result["loss"] = loss
         return metrics_result
 
     @property
     def metrics(self):
-        return [self.clf_loss, self.box_loss, self.normalizer, self.gradient_norm]
+        return [
+            self.clf_loss,
+            self.box_loss,
+            self.gradient_norm,
+            self.mean_average_precision
+        ]
 
     def call(self, image, training=False):
         features = self.fpn(image, training=training)
