@@ -125,12 +125,6 @@ class RetinaNet(keras.Model):
         self.clf_loss = tf.keras.metrics.Mean(name='clf_loss')
         self.box_loss = tf.keras.metrics.Mean(name='box_loss')
         self.gradient_norm = tf.keras.metrics.Mean(name='gradient_norm')
-        self.normalizer = tf.keras.metrics.Mean(name='normalizer')
-
-        self.mean_average_precision = keras_cv.metrics.COCOMeanAveragePrecision(
-                max_detections=100,
-                class_ids=range(num_classes+1)
-        )
 
         self.decoder = DecodePredictions(num_classes=num_classes)
 
@@ -178,7 +172,6 @@ class RetinaNet(keras.Model):
         self.gradient_norm.update_state(gradient_norm)
 
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
-        self.compiled_metrics.update_state(y, y_pred)
 
         decoded = self.decoder(x, y_pred)
         boxes_recombined = tf.concat(
@@ -189,19 +182,78 @@ class RetinaNet(keras.Model):
             ],
         axis=-1)
 
-        self.mean_average_precision.update_state(y, boxes_recombined)
+        # COCO metrics are all stored in compiled_metrics
+        self.compiled_metrics.update_state(y, boxes_recombined)
 
         metrics_result = {m.name: m.result() for m in self.metrics}
         metrics_result["loss"] = loss
         return metrics_result
 
+    def test_step(self, data):
+        x, y = data
+        x = tf.cast(x, dtype=tf.float32)
+        y_true = y
+        y_pred = self(x, training=False )
+        y_pred = tf.cast(y_pred, dtype=tf.float32)
+        box_labels = y_true[:, :, :4]
+        box_predictions = y_pred[:, :, :4]
+        cls_labels = tf.one_hot(
+            tf.cast(y_true[:, :, 4], dtype=tf.int32),
+            depth=self._num_classes,
+            dtype=tf.float32,
+        )
+        cls_predictions = y_pred[:, :, 4:]
+        positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)
+        ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
+        clf_loss = self._clf_loss(cls_labels, cls_predictions)
+        box_loss = self._box_loss(box_labels, box_predictions)
+        clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
+        box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)
+        normalizer = tf.reduce_sum(positive_mask, axis=-1)
+        clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
+        box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)
+
+        clf_loss = tf.math.reduce_sum(clf_loss, axis=-1)
+        box_loss = tf.math.reduce_sum(box_loss, axis=-1)
+        loss = clf_loss + box_loss
+
+        for extra_loss in self.losses:
+            loss += extra_loss
+
+        self.clf_loss.update_state(clf_loss)
+        self.box_loss.update_state(box_loss)
+
+        trainable_vars = self.trainable_variables
+
+        decoded = self.decoder(x, y_pred)
+        boxes_recombined = tf.concat(
+            [
+                decoded.nmsed_boxes,
+                tf.expand_dims(decoded.nmsed_classes, axis=-1),
+                tf.expand_dims(decoded.nmsed_scores, axis=-1)
+            ],
+        axis=-1)
+
+        # COCO metrics are all stored in compiled_metrics
+        self.compiled_metrics.update_state(y, boxes_recombined)
+
+        metrics_result = {m.name: m.result() for m in self.metrics}
+        metrics_result["loss"] = loss
+
+        del metrics_result["gradient_norm"]
+        return metrics_result
+
+
+    def inference(self, x):
+        predictions = self(x, training=False)
+        return self.decoder(x, predictions)
+
     @property
     def metrics(self):
-        return [
+        return super().metrics + [
             self.clf_loss,
             self.box_loss,
             self.gradient_norm,
-            self.mean_average_precision
         ]
 
     def call(self, image, training=False):

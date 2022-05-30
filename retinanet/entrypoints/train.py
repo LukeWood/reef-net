@@ -16,6 +16,7 @@ from reef_net.preprocess import preprocess_data
 from reef_net.preprocess import resize_and_pad_image
 from reef_net.utils import LabelEncoder
 from reef_net.utils import visualize_detections
+import keras_cv
 
 config_flags.DEFINE_config_file("config", "configs/main.py")
 
@@ -31,9 +32,10 @@ def get_callbacks(checkpoint_filepath):
     if FLAGS.model_dir:
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_filepath,
-            monitor="loss",
-            save_freq="epoch"
-            # save_best_only=True
+            monitor="val_loss",
+            save_freq="epoch",
+            save_format="tf",
+            save_best_only=True
         )
         callbacks += [model_checkpoint_callback]
 
@@ -134,7 +136,10 @@ def main(args):
     model.compile(
         optimizer=optimizer,
         # run_eagerly=FLAGS.debug,
-        run_eagerly=True
+        metrics = [
+            keras_cv.metrics.COCOMeanAveragePrecision(class_ids=[0]),
+            keras_cv.metrics.COCORecall(class_ids=[0])
+        ]
     )
     model.build((None, None, None, 3))
     model.summary()
@@ -143,16 +148,18 @@ def main(args):
     checkpoint_filepath = get_checkpoint_path()
     epochs = 300
     steps_per_epoch = 1000 # train_dataset_size // (config.batch_size)
+    validation_steps = 100
+
     if FLAGS.debug:
         epochs = 100
         steps_per_epoch = 3
-    print('Steps per epoch', steps_per_epoch)
+        validation_steps = 3
 
     model.fit(
         train_ds,
         validation_data=val_ds,
         steps_per_epoch=steps_per_epoch,
-        validation_steps=100,
+        validation_steps=validation_steps,
         epochs=epochs,
         callbacks=get_callbacks(checkpoint_filepath),
         verbose=1,
