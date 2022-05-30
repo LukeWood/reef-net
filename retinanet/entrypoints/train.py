@@ -22,7 +22,7 @@ config_flags.DEFINE_config_file("config", "configs/main.py")
 flags.DEFINE_bool("wandb", False, "Whether to run to wandb")
 flags.DEFINE_bool("debug", False, "Whether or not to use extra debug utilities")
 flags.DEFINE_string("artifact_dir", None, "Directory to store artifacts")
-flags.DEFINE_bool("model_dir", False, "Where to save the model after training")
+flags.DEFINE_string("model_dir", False, "Where to save the model after training")
 
 FLAGS = flags.FLAGS
 
@@ -141,7 +141,7 @@ def main(args):
 
 
     checkpoint_filepath = get_checkpoint_path()
-    epochs = 100
+    epochs = 300
     steps_per_epoch = 1000 # train_dataset_size // (config.batch_size)
     if FLAGS.debug:
         epochs = 100
