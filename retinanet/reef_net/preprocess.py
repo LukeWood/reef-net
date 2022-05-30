@@ -127,6 +127,6 @@ def preprocess_data(image, bbox, class_id):
         axis=-1,
     )
     bbox = convert_to_xywh(bbox)
-    
+
     bbox = convert_to_corners(bbox)
     return image, bbox, class_id

@@ -8,7 +8,7 @@ from absl import logging
 from ml_collections.config_flags import config_flags
 
 import wandb
-from reef_net.loaders import load_reef_dataset
+from reef_net.loaders import load_reef_dataset, load_n_images
 from reef_net.model import DecodePredictions
 from reef_net.model import RetinaNet
 from reef_net.model import get_backbone
@@ -16,6 +16,7 @@ from reef_net.preprocess import preprocess_data
 from reef_net.preprocess import resize_and_pad_image
 from reef_net.utils import LabelEncoder
 from reef_net.utils import visualize_detections
+from reef_net.callbacks import VisualizePredictions
 import keras_cv
 
 config_flags.DEFINE_config_file("config", "configs/main.py")
@@ -27,7 +28,7 @@ flags.DEFINE_string("model_dir", None, "Where to save the model after training")
 
 FLAGS = flags.FLAGS
 
-def get_callbacks(checkpoint_filepath):
+def get_callbacks(config, checkpoint_filepath, val_path):
     callbacks = []
     if FLAGS.model_dir:
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -42,6 +43,9 @@ def get_callbacks(checkpoint_filepath):
     if FLAGS.artifact_dir:
         log_dir = os.path.join(FLAGS.artifact_dir, "logs")
         callbacks += [tf.keras.callbacks.TensorBoard(log_dir=log_dir)]
+        val_image, val_labels, val_category = load_n_images(config, val_path, min_boxes_per_image=5, n=1)
+        vis_callback = VisualizePredictions(val_image, val_labels, FLAGS.artifact_dir)
+        callbacks += [vis_callback]
 
     if FLAGS.wandb:
         callbacks += [wandb.keras.WandbCallback()]
@@ -120,11 +124,12 @@ def main(args):
     val_ds = val_ds.apply(tf.data.experimental.ignore_errors())
     val_ds = val_ds.prefetch(autotune) # This line is added
 
+    checkpoint_filepath = get_checkpoint_path()
+
     strategy = tf.distribute.MirroredStrategy()
     resnet50_backbone = get_backbone()
     # print(resnet50_backbone.summary())
     model = RetinaNet(config.num_classes, resnet50_backbone)
-
 
     learning_rates = [2.5e-06, 0.000625, 0.00125, 0.0025, 0.00025, 2.5e-05]
     learning_rate_boundaries = [125, 250, 500, 240000, 360000]
@@ -145,7 +150,6 @@ def main(args):
     model.summary()
 
 
-    checkpoint_filepath = get_checkpoint_path()
     epochs = 300
     steps_per_epoch = 1000 # train_dataset_size // (config.batch_size)
     validation_steps = 100
@@ -154,14 +158,15 @@ def main(args):
         epochs = 100
         steps_per_epoch = 3
         validation_steps = 3
-
+    cbs=get_callbacks(config, checkpoint_filepath, val_path),
+    return
     model.fit(
         train_ds,
         validation_data=val_ds,
         steps_per_epoch=steps_per_epoch,
         validation_steps=validation_steps,
         epochs=epochs,
-        callbacks=get_callbacks(checkpoint_filepath),
+        callbacks=cbs,
         verbose=1,
     )
     print("Fit Done")

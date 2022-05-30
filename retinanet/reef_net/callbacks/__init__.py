@@ -1,1 +1,1 @@
-from visualize_predictions import VisualizePredictions
+from reef_net.callbacks.visualize_predictions import VisualizePredictions
