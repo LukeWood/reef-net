@@ -147,10 +147,11 @@ def main(args):
         epochs = 100
         steps_per_epoch = 3
     print('Steps per epoch', steps_per_epoch)
+
     model.fit(
         train_ds,
         validation_data=val_ds,
-        steps_per_epoch=steps_per_epoch
+        steps_per_epoch=steps_per_epoch,
         validation_steps=100,
         epochs=epochs,
         callbacks=get_callbacks(checkpoint_filepath),
