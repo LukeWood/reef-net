@@ -129,9 +129,8 @@ class RetinaNet(keras.Model):
         self.decoder = DecodePredictions(num_classes=num_classes)
 
     def train_step(self, data, training=True):
-        x, y = data
+        x, (y_true, y_for_metrics) = data
         x = tf.cast(x, dtype=tf.float32)
-        y_true = y
 
         with tf.GradientTape() as tape:
             y_pred = self(x, training=training)
@@ -182,17 +181,17 @@ class RetinaNet(keras.Model):
             ],
         axis=-1)
 
+        tf.print("y_for_metrics", y_for_metrics)
         # COCO metrics are all stored in compiled_metrics
-        self.compiled_metrics.update_state(y, boxes_recombined)
+        self.compiled_metrics.update_state(y_for_metrics, boxes_recombined)
 
         metrics_result = {m.name: m.result() for m in self.metrics}
         metrics_result["loss"] = loss
         return metrics_result
 
     def test_step(self, data):
-        x, y = data
+        x, (y_true, y_for_metrics) = data
         x = tf.cast(x, dtype=tf.float32)
-        y_true = y
         y_pred = self(x, training=False )
         y_pred = tf.cast(y_pred, dtype=tf.float32)
         box_labels = y_true[:, :, :4]
@@ -223,8 +222,6 @@ class RetinaNet(keras.Model):
         self.clf_loss.update_state(clf_loss)
         self.box_loss.update_state(box_loss)
 
-        trainable_vars = self.trainable_variables
-
         decoded = self.decoder(x, y_pred)
         boxes_recombined = tf.concat(
             [
@@ -233,9 +230,8 @@ class RetinaNet(keras.Model):
                 tf.expand_dims(decoded.nmsed_scores, axis=-1)
             ],
         axis=-1)
-
         # COCO metrics are all stored in compiled_metrics
-        self.compiled_metrics.update_state(y, boxes_recombined)
+        self.compiled_metrics.update_state(y_for_metrics, boxes_recombined)
 
         metrics_result = {m.name: m.result() for m in self.metrics}
         metrics_result["loss"] = loss
