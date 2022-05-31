@@ -87,17 +87,13 @@ class VisualizePredictions(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         test_image = self.test_image
         input_image, ratio = prepare_image(test_image)
-        input_image = tf.expand_dims(input_image, axis=0)
-
-        boxes = self.model.inference(input_image)
-        path = f"{self.dir_path}/epoch/"
-        result = boxes[0].numpy()
+        detections = self.model.inference(input_image)
         num_detections = detections.valid_detections[0]
         class_names = [
             "COTS" for x in detections.nmsed_classes[0][:num_detections]
         ]
         visualize_detections(
-            image,
+            test_image,
             detections.nmsed_boxes[0][:num_detections] / ratio,
             class_names,
             detections.nmsed_scores[0][:num_detections],
