@@ -156,10 +156,9 @@ def main(args):
 
     if FLAGS.debug:
         epochs = 100
-        steps_per_epoch = 3
-        validation_steps = 3
+        steps_per_epoch = 1
+        validation_steps = 1
     cbs=get_callbacks(config, checkpoint_filepath, val_path),
-    return
     model.fit(
         train_ds,
         validation_data=val_ds,
