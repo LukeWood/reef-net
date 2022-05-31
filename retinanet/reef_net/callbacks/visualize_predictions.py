@@ -50,11 +50,12 @@ class VisualizePredictions(keras.callbacks.Callback):
         test_images: array-like of images to predict detections for.
         artifact_dir: directory to store images in.
     """
-    def __init__(self, test_image, test_boxes, artifact_dir, **kwargs):
+    def __init__(self, test_image, test_boxes, artifact_dir, subdir_name, **kwargs):
         super().__init__(**kwargs)
         self.test_image = test_image
         self.test_boxes = test_boxes
         self.artifact_dir = artifact_dir
+        self.subdir_name = subdir_name
 
         if not os.path.exists(self.dir_path):
             os.mkdir(self.dir_path)
@@ -82,7 +83,7 @@ class VisualizePredictions(keras.callbacks.Callback):
 
     @property
     def dir_path(self):
-        return self.artifact_dir + "/predictions"
+        return self.artifact_dir + "/" + self.subdir_name
 
     def on_epoch_end(self, epoch, logs=None):
         test_image = self.test_image

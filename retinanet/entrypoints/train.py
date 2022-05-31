@@ -28,7 +28,7 @@ flags.DEFINE_string("model_dir", None, "Where to save the model after training")
 
 FLAGS = flags.FLAGS
 
-def get_callbacks(config, checkpoint_filepath, val_path):
+def get_callbacks(config, checkpoint_filepath, val_path, train_path):
     callbacks = []
     if FLAGS.model_dir:
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -44,8 +44,10 @@ def get_callbacks(config, checkpoint_filepath, val_path):
         log_dir = os.path.join(FLAGS.artifact_dir, "logs")
         callbacks += [tf.keras.callbacks.TensorBoard(log_dir=log_dir)]
         val_image, val_labels, val_category = load_n_images(config, val_path, min_boxes_per_image=5, n=1)
-        vis_callback = VisualizePredictions(val_image, val_labels, FLAGS.artifact_dir)
-        callbacks += [vis_callback]
+        vis_callback = VisualizePredictions(val_image, val_labels, FLAGS.artifact_dir, 'test')
+        train_image, train_labels, train_category = load_n_images(config, train_path, min_boxes_per_image=5, n=1)
+        vis_callback_train = VisualizePredictions(val_image, val_labels, FLAGS.artifact_dir, 'train')
+        callbacks += [vis_callback_train]
 
     if FLAGS.wandb:
         callbacks += [wandb.keras.WandbCallback()]
@@ -158,7 +160,7 @@ def main(args):
         epochs = 100
         steps_per_epoch = 1
         validation_steps = 1
-    cbs=get_callbacks(config, checkpoint_filepath, val_path),
+    cbs=get_callbacks(config, checkpoint_filepath, val_path, train_path),
     model.fit(
         train_ds,
         validation_data=val_ds,

@@ -181,7 +181,6 @@ class RetinaNet(keras.Model):
             ],
         axis=-1)
 
-        tf.print("y_for_metrics", y_for_metrics)
         # COCO metrics are all stored in compiled_metrics
         self.compiled_metrics.update_state(y_for_metrics, boxes_recombined)
 
@@ -348,8 +347,6 @@ class RetinaNetBoxLoss(tf.losses.Loss):
         self._delta = delta
 
     def call(self, y_true, y_pred):
-        # print("YTrue", y_true); print()
-        # print("YPred", y_pred); print()
         difference = y_true - y_pred
         absolute_difference = tf.abs(difference)
         squared_difference = difference**2
