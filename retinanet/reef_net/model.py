@@ -180,7 +180,8 @@ class RetinaNet(keras.Model):
                 tf.expand_dims(decoded.nmsed_scores, axis=-1)
             ],
         axis=-1)
-
+        tf.print('y_for_metrics', y_for_metrics)
+        tf.print('boxes_recombined', boxes_recombined)
         # COCO metrics are all stored in compiled_metrics
         self.compiled_metrics.update_state(y_for_metrics, boxes_recombined)
 
@@ -229,8 +230,7 @@ class RetinaNet(keras.Model):
                 tf.expand_dims(decoded.nmsed_scores, axis=-1)
             ],
         axis=-1)
-        tf.print('y_for_metrics', y_for_metrics)
-        tf.print('boxes_recombined', boxes_recombined)
+
         # COCO metrics are all stored in compiled_metrics
         self.compiled_metrics.update_state(y_for_metrics, boxes_recombined)
 
