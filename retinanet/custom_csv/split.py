@@ -21,4 +21,3 @@ with open("val.csv", "w") as val:
     val.write(header)
     for line in test_indices:
         val.write(lines[line])
-

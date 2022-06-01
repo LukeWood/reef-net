@@ -6,13 +6,22 @@ from reef_net.preprocess import resize_and_pad_image
 import tensorflow as tf
 from reef_net.utils import swap_xy
 
+
 def prepare_image(image):
     image, _, ratio = resize_and_pad_image(image, jitter=None)
     image = tf.keras.applications.resnet.preprocess_input(image)
     return tf.expand_dims(image, axis=0), ratio
 
+
 def visualize_detections(
-    image, boxes, classes, scores, fname, figsize=(24, 16), linewidth=1, color=[0, 0, 1],
+    image,
+    boxes,
+    classes,
+    scores,
+    fname,
+    figsize=(24, 16),
+    linewidth=1,
+    color=[0, 0, 1],
 ):
     """Visualize Detections"""
     image = np.array(image, dtype=np.uint8)
@@ -34,13 +43,14 @@ def visualize_detections(
         ax.add_patch(patch)
         ax.text(
             x1,
-            y1-8,
+            y1 - 8,
             text,
             bbox={"facecolor": color, "alpha": 0.4},
             clip_box=ax.clipbox,
             clip_on=True,
         )
-    plt.savefig(fname, dpi=60, bbox_inches='tight', transparent=True, pad_inches=0)
+    plt.savefig(fname, dpi=60, bbox_inches="tight", transparent=True, pad_inches=0)
+
 
 class VisualizePredictions(keras.callbacks.Callback):
     """VisualizePredictions visualizes predictions from RetinaNet.
@@ -50,6 +60,7 @@ class VisualizePredictions(keras.callbacks.Callback):
         test_images: array-like of images to predict detections for.
         artifact_dir: directory to store images in.
     """
+
     def __init__(self, test_image, test_boxes, artifact_dir, subdir_name, **kwargs):
         super().__init__(**kwargs)
         self.test_image = test_image
@@ -74,11 +85,7 @@ class VisualizePredictions(keras.callbacks.Callback):
         bbox = swap_xy(bbox)
 
         visualize_detections(
-            test_image,
-            bbox,
-            class_names,
-            scores,
-            self.dir_path + "/ground_truth.png"
+            test_image, bbox, class_names, scores, self.dir_path + "/ground_truth.png"
         )
 
     @property
@@ -90,13 +97,11 @@ class VisualizePredictions(keras.callbacks.Callback):
         input_image, ratio = prepare_image(test_image)
         detections = self.model.inference(input_image)
         num_detections = detections.valid_detections[0]
-        class_names = [
-            "COTS" for x in detections.nmsed_classes[0][:num_detections]
-        ]
+        class_names = ["COTS" for x in detections.nmsed_classes[0][:num_detections]]
         visualize_detections(
             test_image,
             detections.nmsed_boxes[0][:num_detections] / ratio,
             class_names,
             detections.nmsed_scores[0][:num_detections],
-            f"{self.dir_path}/{epoch}.png"
+            f"{self.dir_path}/{epoch}.png",
         )
