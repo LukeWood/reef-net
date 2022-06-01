@@ -110,7 +110,9 @@ class RetinaNet(keras.Model):
         Currently supports ResNet50 only.
     """
 
-    def __init__(self, num_classes, backbone=None, alpha=0.25, gamma=2.0, delta=1.0,  **kwargs):
+    def __init__(
+        self, num_classes, backbone=None, alpha=0.25, gamma=2.0, delta=1.0, **kwargs
+    ):
         super(RetinaNet, self).__init__(name="RetinaNet", **kwargs)
         self.fpn = FeaturePyramid(backbone)
         self.num_classes = num_classes
@@ -122,9 +124,9 @@ class RetinaNet(keras.Model):
         self._box_loss = RetinaNetBoxLoss(delta)
         self._num_classes = num_classes
 
-        self.clf_loss = tf.keras.metrics.Mean(name='clf_loss')
-        self.box_loss = tf.keras.metrics.Mean(name='box_loss')
-        self.gradient_norm = tf.keras.metrics.Mean(name='gradient_norm')
+        self.clf_loss = tf.keras.metrics.Mean(name="clf_loss")
+        self.box_loss = tf.keras.metrics.Mean(name="box_loss")
+        self.gradient_norm = tf.keras.metrics.Mean(name="gradient_norm")
 
         self.decoder = DecodePredictions(num_classes=num_classes)
 
@@ -150,8 +152,12 @@ class RetinaNet(keras.Model):
             clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
             box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)
             normalizer = tf.reduce_sum(positive_mask, axis=-1)
-            clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
-            box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)
+            clf_loss = tf.math.divide_no_nan(
+                tf.reduce_sum(clf_loss, axis=-1), normalizer
+            )
+            box_loss = tf.math.divide_no_nan(
+                tf.reduce_sum(box_loss, axis=-1), normalizer
+            )
 
             clf_loss = tf.math.reduce_sum(clf_loss, axis=-1)
             box_loss = tf.math.reduce_sum(box_loss, axis=-1)
@@ -173,26 +179,26 @@ class RetinaNet(keras.Model):
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
 
         decoded = self.decoder(x, y_pred)
-        boxes_recombined = tf.concat(
-            [
-                decoded.nmsed_boxes,
-                tf.expand_dims(decoded.nmsed_classes, axis=-1),
-                tf.expand_dims(decoded.nmsed_scores, axis=-1)
-            ],
-        axis=-1)
-        tf.print('y_for_metrics', y_for_metrics)
-        tf.print('boxes_recombined', boxes_recombined)
+        result = self._encode_to_ragged(decoded)
+        result = result.to_tensor(default_value=-1)
         # COCO metrics are all stored in compiled_metrics
-        self.compiled_metrics.update_state(y_for_metrics, boxes_recombined)
+        tf.cond(
+            tf.shape(result)[2] != 0,
+            lambda: self.compiled_metrics.update_state(y_for_metrics, result),
+            lambda: self.nop(),
+        )
 
         metrics_result = {m.name: m.result() for m in self.metrics}
         metrics_result["loss"] = loss
         return metrics_result
 
+    def nop(self):
+        pass
+
     def test_step(self, data):
         x, (y_true, y_for_metrics) = data
         x = tf.cast(x, dtype=tf.float32)
-        y_pred = self(x, training=False )
+        y_pred = self(x, training=False)
         y_pred = tf.cast(y_pred, dtype=tf.float32)
         box_labels = y_true[:, :, :4]
         box_predictions = y_pred[:, :, :4]
@@ -223,16 +229,14 @@ class RetinaNet(keras.Model):
         self.box_loss.update_state(box_loss)
 
         decoded = self.decoder(x, y_pred)
-        boxes_recombined = tf.concat(
-            [
-                decoded.nmsed_boxes,
-                tf.expand_dims(decoded.nmsed_classes, axis=-1),
-                tf.expand_dims(decoded.nmsed_scores, axis=-1)
-            ],
-        axis=-1)
-
+        result = self._encode_to_ragged(decoded)
+        result = result.to_tensor(default_value=-1)
         # COCO metrics are all stored in compiled_metrics
-        self.compiled_metrics.update_state(y_for_metrics, boxes_recombined)
+        tf.cond(
+            tf.shape(result)[2] != 0,
+            lambda: self.compiled_metrics.update_state(y_for_metrics, result),
+            lambda: self.nop(),
+        )
 
         metrics_result = {m.name: m.result() for m in self.metrics}
         metrics_result["loss"] = loss
@@ -240,6 +244,27 @@ class RetinaNet(keras.Model):
         del metrics_result["gradient_norm"]
         return metrics_result
 
+    def _encode_to_ragged(self, nmsed_boxes):
+        boxes = []
+
+        # TODO(lukewood): change to dynamically computed batch size
+        for i in range(2):
+            num_detections = nmsed_boxes.valid_detections[i]
+            boxes_recombined = tf.concat(
+                [
+                    nmsed_boxes.nmsed_boxes[i][:num_detections],
+                    tf.expand_dims(
+                        nmsed_boxes.nmsed_classes[i][:num_detections], axis=-1
+                    ),
+                    tf.expand_dims(
+                        nmsed_boxes.nmsed_scores[i][:num_detections], axis=-1
+                    ),
+                ],
+                axis=-1,
+            )
+            boxes.append(boxes_recombined)
+        result = tf.ragged.stack(boxes)
+        return result
 
     def inference(self, x):
         predictions = self(x, training=False)
