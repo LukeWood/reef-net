@@ -32,6 +32,6 @@ setup(
         "click",
         "wandb",
         "tensorflow-metadata",
-        "dill"
+        "dill",
     ],
 )
