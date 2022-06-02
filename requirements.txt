@@ -4,3 +4,4 @@ setuptools~=60.2.0
 wandb~=0.12.13
 matplotlib~=3.5.1
 opencv-python~=4.5.5.64
+keras-cv
