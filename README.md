@@ -18,7 +18,15 @@ To get up in and running, you should run:
 python setup.py develop
 ```
 
-This will install all of the dependencies and get you up and running.
+Next, you will need to download the dataset:
+```
+kaggle competitions download -c tensorflow-great-barrier-reef
+mkdir tensorflow-great-barrier-reef
+mv tensorflow-great-barrier-reef.zip tensorflow-great-barrier-reef
+cd tensorflow-great-barrier-reef
+unzip tensorflow-great-barrier-reef.zip
+```
+
 To test that you are properly setup, try running:
 
 ```
@@ -26,6 +34,16 @@ python entrypoints/show_samples.py
 ```
 
 This script should show two images: one with no annotations and one with annotations.
+
+## Training
+
+To train, first follow the "Quickstart" section.
+
+After following quickstart, you should be able to run the following:
+
+```bash
+python entrypoints/train.py --artifact_dir=artifacts
+```
 
 ## Future Efforts
 
