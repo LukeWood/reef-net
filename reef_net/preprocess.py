@@ -111,7 +111,7 @@ def preprocess_data(image, bbox, class_id):
     # [0, 100, 32, 32] -> absolute pixels
     # [0.2, 0.3, 0.01, 0.01] -> percentage of the input shape
     # bbox, image_shape = convert_xywh_to_corners_percentage(annotations, image)
-    bbox = swap_xy(bbox) # Swap_xy makes this go Nan as of now I suppose
+    bbox = swap_xy(bbox)  # Swap_xy makes this go Nan as of now I suppose
     class_id = tf.cast(class_id, dtype=tf.int32)
 
     image, bbox = random_flip_horizontal(image, bbox)
@@ -127,6 +127,6 @@ def preprocess_data(image, bbox, class_id):
         axis=-1,
     )
     bbox = convert_to_xywh(bbox)
-    
+
     bbox = convert_to_corners(bbox)
     return image, bbox, class_id

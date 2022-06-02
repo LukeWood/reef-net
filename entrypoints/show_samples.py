@@ -15,7 +15,6 @@ from reef_net.utils import visualize_detections
 from reef_net.utils import convert_to_corners
 
 
-
 FLAGS = flags.FLAGS
 
 
@@ -39,7 +38,9 @@ def main(args):
     config = FLAGS.config
     base_path = config.data_path
     csv_path = os.path.abspath(os.path.join(base_path, config.train_path))
-    ds, dataset_size = reef_net.loaders.load_reef_dataset(config, csv_path, min_boxes_per_image=5)
+    ds, dataset_size = reef_net.loaders.load_reef_dataset(
+        config, csv_path, min_boxes_per_image=5
+    )
 
     ds = ds.shuffle(1)
     ds = ds.map(preprocess_data)
@@ -64,7 +65,15 @@ def main(args):
     # annotation[:, 3] = bounding_boxes[:, 2] * img_h
     # annotation[:, 2] = bounding_boxes[:, 3] * img_w
 
-    visualize_detections(image, bounding_boxes, category, scores, figsize=(7, 7), linewidth=1, color=[0, 0, 1])
+    visualize_detections(
+        image,
+        bounding_boxes,
+        category,
+        scores,
+        figsize=(7, 7),
+        linewidth=1,
+        color=[0, 0, 1],
+    )
 
 
 if __name__ == "__main__":

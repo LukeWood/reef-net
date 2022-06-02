@@ -38,19 +38,22 @@ def get_bboxes(annotations):
 #     return pad_to_shape(result, (max_boxes, 5))
 
 
-def load_image(self, idx):
-    image_path = self.image_paths[idx]
-    img = cv2.imread(image_path)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
-    return img
-
-
 def decode_img(img):
     # Convert the compressed string to a 3D uint8 tensor
     file = tf.io.read_file(img)
     return tf.io.decode_jpeg(file, channels=3)
     # Resize the image to the desired size
     # return tf.image.resize(img, [img_height, img_width])
+
+
+def load_n_images(
+    config,
+    csv_path,
+    n,
+    min_boxes_per_image=0,
+):
+    ds, _ = load_reef_dataset(config, csv_path, min_boxes_per_image=min_boxes_per_image)
+    return next(iter(ds.take(n)))
 
 
 def load_reef_dataset(config, csv_path, min_boxes_per_image=0):
@@ -93,10 +96,10 @@ def load_reef_dataset(config, csv_path, min_boxes_per_image=0):
             bbox = np.zeros(annotations.shape)
             bbox[:, 0] = annotations[:, 1] / img_h
             bbox[:, 1] = annotations[:, 0] / img_w
-            bbox[:, 2] = (annotations[:, 3]+annotations[:, 1]) / img_h
-            bbox[:, 3] = (annotations[:, 2]+annotations[:, 0])/ img_w
+            bbox[:, 2] = (annotations[:, 3] + annotations[:, 1]) / img_h
+            bbox[:, 3] = (annotations[:, 2] + annotations[:, 0]) / img_w
 
-            category = [[0] * np.array(annotations).shape[0]]
+            category = [[1] * np.array(annotations).shape[0]]
             category = list(np.concatenate(category).flat)
             yield (img, bbox, category)
 

@@ -8,6 +8,7 @@ from reef_net.loaders import load_reef_dataset
 from reef_net.utils import AnchorBox
 from reef_net.utils import convert_to_corners
 
+import keras_cv
 
 # --- Building the ResNet50 backbone ---
 def get_backbone():
@@ -109,7 +110,9 @@ class RetinaNet(keras.Model):
         Currently supports ResNet50 only.
     """
 
-    def __init__(self, num_classes, backbone=None, alpha=0.25, gamma=2.0, delta=1.0,  **kwargs):
+    def __init__(
+        self, num_classes, backbone=None, alpha=0.25, gamma=2.0, delta=1.0, **kwargs
+    ):
         super(RetinaNet, self).__init__(name="RetinaNet", **kwargs)
         self.fpn = FeaturePyramid(backbone)
         self.num_classes = num_classes
@@ -121,14 +124,15 @@ class RetinaNet(keras.Model):
         self._box_loss = RetinaNetBoxLoss(delta)
         self._num_classes = num_classes
 
-        self.clf_loss = tf.keras.metrics.Mean(name='clf_loss')
-        self.box_loss = tf.keras.metrics.Mean(name='box_loss')
-        self.gradient_norm = tf.keras.metrics.Mean(name='gradient_norm')
-        self.normalizer = tf.keras.metrics.Mean(name='normalizer')
+        self.clf_loss = tf.keras.metrics.Mean(name="clf_loss")
+        self.box_loss = tf.keras.metrics.Mean(name="box_loss")
+        self.gradient_norm = tf.keras.metrics.Mean(name="gradient_norm")
+
+        self.decoder = DecodePredictions(num_classes=num_classes)
 
     def train_step(self, data, training=True):
-        x, y = data
-        y_true = y
+        x, (y_true, y_for_metrics) = data
+        x = tf.cast(x, dtype=tf.float32)
 
         with tf.GradientTape() as tape:
             y_pred = self(x, training=training)
@@ -148,8 +152,12 @@ class RetinaNet(keras.Model):
             clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
             box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)
             normalizer = tf.reduce_sum(positive_mask, axis=-1)
-            clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
-            box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)
+            clf_loss = tf.math.divide_no_nan(
+                tf.reduce_sum(clf_loss, axis=-1), normalizer
+            )
+            box_loss = tf.math.divide_no_nan(
+                tf.reduce_sum(box_loss, axis=-1), normalizer
+            )
 
             clf_loss = tf.math.reduce_sum(clf_loss, axis=-1)
             box_loss = tf.math.reduce_sum(box_loss, axis=-1)
@@ -160,7 +168,6 @@ class RetinaNet(keras.Model):
 
         self.clf_loss.update_state(clf_loss)
         self.box_loss.update_state(box_loss)
-        self.normalizer.update_state(normalizer)
 
         trainable_vars = self.trainable_variables
 
@@ -170,15 +177,106 @@ class RetinaNet(keras.Model):
         self.gradient_norm.update_state(gradient_norm)
 
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
-        self.compiled_metrics.update_state(y, y_pred)
+
+        decoded = self.decoder(x, y_pred)
+        result = self._encode_to_ragged(decoded)
+        result = result.to_tensor(default_value=-1)
+        # COCO metrics are all stored in compiled_metrics
+        tf.cond(
+            tf.shape(result)[2] != 0,
+            lambda: self.compiled_metrics.update_state(y_for_metrics, result),
+            lambda: self.nop(),
+        )
 
         metrics_result = {m.name: m.result() for m in self.metrics}
         metrics_result["loss"] = loss
         return metrics_result
 
+    def nop(self):
+        pass
+
+    def test_step(self, data):
+        x, (y_true, y_for_metrics) = data
+        x = tf.cast(x, dtype=tf.float32)
+        y_pred = self(x, training=False)
+        y_pred = tf.cast(y_pred, dtype=tf.float32)
+        box_labels = y_true[:, :, :4]
+        box_predictions = y_pred[:, :, :4]
+        cls_labels = tf.one_hot(
+            tf.cast(y_true[:, :, 4], dtype=tf.int32),
+            depth=self._num_classes,
+            dtype=tf.float32,
+        )
+        cls_predictions = y_pred[:, :, 4:]
+        positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)
+        ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
+        clf_loss = self._clf_loss(cls_labels, cls_predictions)
+        box_loss = self._box_loss(box_labels, box_predictions)
+        clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
+        box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)
+        normalizer = tf.reduce_sum(positive_mask, axis=-1)
+        clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
+        box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)
+
+        clf_loss = tf.math.reduce_sum(clf_loss, axis=-1)
+        box_loss = tf.math.reduce_sum(box_loss, axis=-1)
+        loss = clf_loss + box_loss
+
+        for extra_loss in self.losses:
+            loss += extra_loss
+
+        self.clf_loss.update_state(clf_loss)
+        self.box_loss.update_state(box_loss)
+
+        decoded = self.decoder(x, y_pred)
+        result = self._encode_to_ragged(decoded)
+        result = result.to_tensor(default_value=-1)
+        # COCO metrics are all stored in compiled_metrics
+        tf.cond(
+            tf.shape(result)[2] != 0,
+            lambda: self.compiled_metrics.update_state(y_for_metrics, result),
+            lambda: self.nop(),
+        )
+
+        metrics_result = {m.name: m.result() for m in self.metrics}
+        metrics_result["loss"] = loss
+
+        del metrics_result["gradient_norm"]
+        return metrics_result
+
+    def _encode_to_ragged(self, nmsed_boxes):
+        boxes = []
+
+        # TODO(lukewood): change to dynamically computed batch size
+        for i in range(2):
+            num_detections = nmsed_boxes.valid_detections[i]
+            boxes_recombined = tf.concat(
+                [
+                    nmsed_boxes.nmsed_boxes[i][:num_detections],
+                    tf.expand_dims(
+                        nmsed_boxes.nmsed_classes[i][:num_detections], axis=-1
+                    ),
+                    tf.expand_dims(
+                        nmsed_boxes.nmsed_scores[i][:num_detections], axis=-1
+                    ),
+                ],
+                axis=-1,
+            )
+            boxes.append(boxes_recombined)
+        result = tf.ragged.stack(boxes)
+        return result
+
+    def inference(self, x):
+        predictions = self(x, training=False)
+        return self.decoder(x, predictions)
+
     @property
     def metrics(self):
-        return [self.clf_loss, self.box_loss, self.normalizer, self.gradient_norm]
+        return super().metrics + [
+            self.clf_loss,
+            self.box_loss,
+            self.gradient_norm,
+        ]
 
     def call(self, image, training=False):
         features = self.fpn(image, training=training)
@@ -276,8 +374,6 @@ class RetinaNetBoxLoss(tf.losses.Loss):
         self._delta = delta
 
     def call(self, y_true, y_pred):
-        # print("YTrue", y_true); print()
-        # print("YPred", y_pred); print()
         difference = y_true - y_pred
         absolute_difference = tf.abs(difference)
         squared_difference = difference**2

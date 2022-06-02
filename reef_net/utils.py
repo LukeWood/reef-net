@@ -310,6 +310,10 @@ class LabelEncoder:
             label = self._encode_sample(images_shape, gt_boxes[i], cls_ids[i])
             labels = labels.write(i, label)
 
+        gt_for_other = tf.concat(
+            [gt_boxes, tf.cast(cls_ids[..., None], tf.float32)], axis=-1
+        )
+
         batch_images = tf.keras.applications.resnet.preprocess_input(batch_images)
-        result = (batch_images, labels.stack())
+        result = (batch_images, (labels.stack(), gt_for_other))
         return result
