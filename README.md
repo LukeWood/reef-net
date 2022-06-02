@@ -60,3 +60,4 @@ If you'd like to contribute, feel free to open a PR improving the cleanliness of
 experimenting with new anchorbox configurations, or including more data augmentation techniques.
 
 ## Thanks!
+Thanks for checking out our RetinaNet implementation.
