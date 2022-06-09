@@ -13,6 +13,8 @@ implementation of RetinaNet, integration with the `keras_cv.metrics.COCOMeanAver
 and `keras_cv.metrics.COCORecall` metrics, and a Keras callback to visualize
 predictions.
 
+[Training Metrics are available in this Weights and Biases report.](https://wandb.ai/reef-net/reef-net/reports/ReefNet-Training--VmlldzoyMTQzMzcz?accessToken=u1i71ro4gv2mjjcyizen6u9bp7ohg14rvc3oxy0gs06df56s9wu18ii4ke6bs8n7)
+
 ## Quickstart
 
 To get up in and running, you should run:
@@ -44,8 +46,27 @@ To train, first follow the "Quickstart" section.
 After following quickstart, you should be able to run the following:
 
 ```bash
-python entrypoints/train.py --artifact_dir=artifacts
+python entrypoints/train.py --wandb --artifact_dir=artifacts
 ```
+
+## Generating the Training Videos
+
+In order to generate the training videos, you will need to first run a training run with
+an `--artifact_dir` specified.  This will produce a directory such as `artifacts/train/`
+that will contain a series of images.
+
+Next, you will need to ensure you have `ffmpeg` installed.  `ffmpeg` is available in
+every major package manager on every major Unix based distribution.
+
+Following this, you may use the following script to re-generate the
+`shell/create-training-video.sh` script:
+
+```bash
+./shell/create-training-video.sh {your_artifacts_dir}/train/ {some_video_name}
+```
+
+This will output the video to `media/{some_video_name}.mp4` and
+`media/{some_video_name}.gif`.
 
 ## Future Efforts
 
