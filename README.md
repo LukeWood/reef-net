@@ -1,6 +1,6 @@
 ![reefnet logo](media/reefnet.png)
 
-<img src="media/demo_image.png" width="400px"/>
+<img src="media/learning.gif" width="400px"/>
 
 <br/>
 
