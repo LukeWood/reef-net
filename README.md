@@ -2,7 +2,9 @@
 
 <img src="media/learning.gif" width="400px"/>
 
-<br/>
+*ReefNet's predictions after each training epoch*
+
+## Overview
 
 ReefNet is a RetinaNet implementation written in pure Keras developed for the
 [Crown-of-Thorns Great Barrier Reef Dataset](https://www.kaggle.com/competitions/tensorflow-great-barrier-reef/overview)
