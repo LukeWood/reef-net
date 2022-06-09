@@ -2,7 +2,7 @@
 
 <img src="media/learning.gif" width="400px"/>
 
-*The evolution of ReefNet's predictions during training*
+*ReefNet's predictions after each training epoch*
 
 ## Overview
 
