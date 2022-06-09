@@ -12,7 +12,6 @@ from reef_net.utils import swap_xy
 import tensorflow as tf
 import reef_net
 import wandb
-from reef_net.preprocess import preprocess_data
 import numpy as np
 
 FLAGS = flags.FLAGS
