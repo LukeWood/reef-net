@@ -1,6 +1,7 @@
 ![reefnet logo](media/reefnet.png)
 
 <img src="media/learning.gif" width="400px"/>
+*The evolution of ReefNet's predictions during training*
 
 <br/>
 
