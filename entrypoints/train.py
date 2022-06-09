@@ -120,7 +120,7 @@ def main(args):
     train_ds = train_ds.shuffle(config.batch_size * 8)
     train_ds = train_ds.repeat()
     train_ds = train_ds.padded_batch(
-        config.batch_size, padding_values=(0.0, 1e-8, -1), drop_remainder=True
+        config.batch_size, padding_values=(0.0, 1e-8, 1e-8, -1), drop_remainder=True
     )
 
     train_ds = train_ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
@@ -138,7 +138,7 @@ def main(args):
     val_ds = val_ds.shuffle(config.batch_size * 8)
     val_ds = val_ds.repeat()
     val_ds = val_ds.padded_batch(
-        config.batch_size, padding_values=(0.0, 1e-8, -1), drop_remainder=True
+        config.batch_size, padding_values=(0.0, 1e-8, 1e-8, -1), drop_remainder=True
     )
 
     val_ds = val_ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
@@ -163,8 +163,8 @@ def main(args):
         optimizer=optimizer,
         # run_eagerly=FLAGS.debug,
         metrics=[
-            keras_cv.metrics.COCOMeanAveragePrecision(class_ids=[1]),
-            keras_cv.metrics.COCORecall(class_ids=[1]),
+            keras_cv.metrics.COCOMeanAveragePrecision(class_ids=[1], bounding_box_format='xyxy'),
+            keras_cv.metrics.COCORecall(class_ids=[1], bounding_box_format='xyxy'),
         ],
     )
     model.build((None, None, None, 3))

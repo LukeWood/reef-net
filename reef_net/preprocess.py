@@ -117,7 +117,7 @@ def preprocess_data(image, bbox, class_id):
     image, bbox = random_flip_horizontal(image, bbox)
     image, image_shape, _ = resize_and_pad_image(image)
 
-    bbox = tf.stack(
+    corners_boxes = tf.stack(
         [
             bbox[:, 0] * image_shape[1],
             bbox[:, 1] * image_shape[0],
@@ -126,6 +126,5 @@ def preprocess_data(image, bbox, class_id):
         ],
         axis=-1,
     )
-    bbox = convert_to_xywh(bbox)
-    bbox = convert_to_corners(bbox)
-    return image, bbox, class_id
+    xywh_boxes = convert_to_xywh(corners_boxes)
+    return image, xywh_boxes, corners_boxes, class_id
