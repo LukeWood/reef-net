@@ -13,6 +13,8 @@ implementation of RetinaNet, integration with the `keras_cv.metrics.COCOMeanAver
 and `keras_cv.metrics.COCORecall` metrics, and a Keras callback to visualize
 predictions.
 
+[Training Metrics are available in this Weights and Biases report.](https://wandb.ai/reef-net/reef-net/reports/ReefNet-Training--VmlldzoyMTQzMzcz?accessToken=u1i71ro4gv2mjjcyizen6u9bp7ohg14rvc3oxy0gs06df56s9wu18ii4ke6bs8n7)
+
 ## Quickstart
 
 To get up in and running, you should run:
