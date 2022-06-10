@@ -92,8 +92,13 @@ def load_reef_dataset(config, csv_path, min_boxes_per_image=0):
             # Changing the structure of annotations to match the annotations of the COCO Dataset
             # if min_boxes_per_image != 0:
             img_h, img_w, _ = img.shape
+            
+            # Raw annotations are [x, y, w, h] absolute coordinates
             annotations = np.array(annotations)
             bbox = np.zeros(annotations.shape)
+            
+            # bbox is normalized corners formay in [x, y, y2, x2]/img_size
+            # so they are in the range [0, 1]
             bbox[:, 0] = annotations[:, 1] / img_h
             bbox[:, 1] = annotations[:, 0] / img_w
             bbox[:, 2] = (annotations[:, 3] + annotations[:, 1]) / img_h
