@@ -54,6 +54,16 @@ After following quickstart, you should be able to run the following:
 python entrypoints/train.py --wandb --artifact_dir=artifacts
 ```
 
+## Results
+
+Below are the learning curves of Loss, Mean Average Precision (MaP), and Recall.
+
+![Mean Average Precision](media/mean_average_precision_chart.png)
+
+![Recall](media/recall_chart.png)
+
+![Loss](media/loss.png)
+
 ## Generating the Training Videos
 
 In order to generate the training videos, you will need to first run a training run with
