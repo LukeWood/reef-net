@@ -3,6 +3,7 @@
 <img src="media/learning_process.gif" width="400px"/>
 
 *ReefNet's predictions after each training epoch*
+
 [Training Metrics are available in this Weights and Biases report.](https://wandb.ai/reef-net/reef-net/reports/ReefNet-Training--VmlldzoyMTQzMzcz?accessToken=u1i71ro4gv2mjjcyizen6u9bp7ohg14rvc3oxy0gs06df56s9wu18ii4ke6bs8n7)
 
 ## Overview
