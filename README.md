@@ -12,7 +12,7 @@ ReefNet is a RetinaNet implementation written in pure Keras developed to detect
 [Crown-of-Thorns Starfish on the Great Barrier Reef](https://www.kaggle.com/competitions/tensorflow-great-barrier-reef/overview), which pose an existential threat to the Great Barrier Reef due to a population decline of their most common predator.
 The traditional way of surveying Crown-of-Thorns Starfish is the “Manta Tow” method, where divers are towed along the reef, pausing ever so often to dive down and record how many COTS are visible. With such a large ocean bed, this method is clearly inefficient, unreliable, and costly.
 
-[More information about the problem Crown-of-Thorns Starfish pose to the Great Barrier Reef as well as efforts to control their population can be found in our project report](media/final_report.pdf).
+[More information about the problem Crown-of-Thorns Starfish pose to the Great Barrier Reef as well as efforts to control their population can be found in our project write up](media/final_report.pdf).
 
 ReefNet constists of custom `tf.data.Dataset` loader, a `keras.Model` subclass
 implementation of RetinaNet, train test splitting for the dataset,
