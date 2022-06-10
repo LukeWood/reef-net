@@ -58,13 +58,11 @@ python entrypoints/train.py --wandb --artifact_dir=artifacts
 
 Below are the learning curves of Loss, Mean Average Precision (MaP), and Recall.
 
-![Mean Average Precision](media/mean_average_precision_chart.png)
+<img src="media/mean_average_precision_chart.png" width="400px"/>
+<img src="media/recall_chart.png" width="400px"/>
+<img src="media/loss.png" width="400px"/>
 
-![Recall](media/recall_chart.png)
-
-![Loss](media/loss.png)
-
-![Full results are available in our project write up](media/final_report.pdf)
+[Full results are available in our project write up](media/final_report.pdf)
 
 ## Generating the Training Videos
 
@@ -100,4 +98,4 @@ If you'd like to contribute, feel free to open a PR improving the cleanliness of
 experimenting with new anchorbox configurations, or including more data augmentation techniques.
 
 ## Thanks!
-Thanks for checking out our RetinaNet implementation.
+Thanks for checking out ReefNet
