@@ -3,17 +3,21 @@
 <img src="media/learning_process.gif" width="400px"/>
 
 *ReefNet's predictions after each training epoch*
+[Training Metrics are available in this Weights and Biases report.](https://wandb.ai/reef-net/reef-net/reports/ReefNet-Training--VmlldzoyMTQzMzcz?accessToken=u1i71ro4gv2mjjcyizen6u9bp7ohg14rvc3oxy0gs06df56s9wu18ii4ke6bs8n7)
 
 ## Overview
 
-ReefNet is a RetinaNet implementation written in pure Keras developed for the
-[Crown-of-Thorns Great Barrier Reef Dataset](https://www.kaggle.com/competitions/tensorflow-great-barrier-reef/overview)
-The project includes a custom `tf.data.Dataset` loader, a `keras.Model` subclass
-implementation of RetinaNet, integration with the `keras_cv.metrics.COCOMeanAveragePrecision`
-and `keras_cv.metrics.COCORecall` metrics, and a Keras callback to visualize
-predictions.
+ReefNet is a RetinaNet implementation written in pure Keras developed to detect
+[Crown-of-Thorns Starfish on the Great Barrier Reef](https://www.kaggle.com/competitions/tensorflow-great-barrier-reef/overview), which pose an existential threat to the Great Barrier Reef due to a population decline of their most common predator.
+The traditional way of surveying Crown-of-Thorns Starfish is the “Manta Tow” method, where divers are towed along the reef, pausing ever so often to dive down and record how many COTS are visible. With such a large ocean bed, this method is clearly inefficient, unreliable, and costly.
 
-[Training Metrics are available in this Weights and Biases report.](https://wandb.ai/reef-net/reef-net/reports/ReefNet-Training--VmlldzoyMTQzMzcz?accessToken=u1i71ro4gv2mjjcyizen6u9bp7ohg14rvc3oxy0gs06df56s9wu18ii4ke6bs8n7)
+[More information about the problem Crown-of-Thorns Starfish pose to the Great Barrier Reef as well as efforts to control their population can be found in our project report](media/final_report.pdf).
+
+ReefNet constists of custom `tf.data.Dataset` loader, a `keras.Model` subclass
+implementation of RetinaNet, train test splitting for the dataset,
+integration with the `keras_cv.COCOMeanAveragePrecision` and
+`keras_cv.COCORecall` metrics, and a Keras callback to visualize
+predictions.
 
 ## Quickstart
 

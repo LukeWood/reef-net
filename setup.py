@@ -15,11 +15,11 @@ setup(
     author="Luke Wood, Sandra Villamar, Harsh Thakur",
     author_email="lukewoodcs@gmail.com",
     install_requires=[
-        "keras-cv @ git+https://github.com/keras-team/keras-cv",
+        "keras-cv==0.2.6",
         "black",
         "isort",
         "flake8",
-        "tensorflow",
+        "tensorflow>=2.9.0",
         "absl-py",
         "tensorflow_datasets",
         "ml_collections",
