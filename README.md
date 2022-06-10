@@ -1,6 +1,6 @@
 ![reefnet logo](media/reefnet.png)
 
-<img src="media/learning_process.gif" width="400px"/>
+<img src="media/updated_learning_process.gif" width="400px"/>
 
 *ReefNet's predictions after each training epoch*
 
