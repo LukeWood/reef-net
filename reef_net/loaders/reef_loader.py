@@ -97,7 +97,7 @@ def load_reef_dataset(config, csv_path, min_boxes_per_image=0):
             annotations = np.array(annotations)
             bbox = np.zeros(annotations.shape)
             
-            # bbox is normalized corners formay in [x, y, y2, x2]/img_size
+            # bbox is normalized corners formay in [y, x, y2, x2]/img_size
             # so they are in the range [0, 1]
             bbox[:, 0] = annotations[:, 1] / img_h
             bbox[:, 1] = annotations[:, 0] / img_w
