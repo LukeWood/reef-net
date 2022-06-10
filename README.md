@@ -64,6 +64,8 @@ Below are the learning curves of Loss, Mean Average Precision (MaP), and Recall.
 
 ![Loss](media/loss.png)
 
+![Full results are available in our project write up](media/final_report.pdf)
+
 ## Generating the Training Videos
 
 In order to generate the training videos, you will need to first run a training run with
