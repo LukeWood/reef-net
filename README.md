@@ -29,10 +29,10 @@ python setup.py develop
 
 Next, you will need to download the dataset:
 ```
+mkdir -p data/tensorflow-great-barrier-reef
 kaggle competitions download -c tensorflow-great-barrier-reef
-mkdir tensorflow-great-barrier-reef
-mv tensorflow-great-barrier-reef.zip tensorflow-great-barrier-reef
-cd tensorflow-great-barrier-reef
+mv tensorflow-great-barrier-reef.zip data/tensorflow-great-barrier-reef
+cd data/tensorflow-great-barrier-reef
 unzip tensorflow-great-barrier-reef.zip
 ```
 
