@@ -29,9 +29,10 @@ class RetinaNet(keras.Model):
         alpha=0.25,
         gamma=2.0,
         delta=1.0,
+        name="RetinaNet",
         **kwargs
     ):
-        super().__init__(name="RetinaNet", **kwargs)
+        super().__init__(name=name, **kwargs)
         self.fpn = layers_lib.FeaturePyramid(backbone)
         self.num_classes = num_classes
         self.batch_size = batch_size
@@ -46,7 +47,7 @@ class RetinaNet(keras.Model):
             box_loss=losses_lib.RetinaNetBoxLoss(delta),
         )
 
-        self.decoder = layers_lib.DecodePredictions(num_classes=num_classes)
+        self.decoder = layers_lib.DecodePredictions(num_classes=num_classes, batch_size=batch_size)
 
         self.gradient_norm_metric = tf.keras.metrics.Mean(name="gradient_norm")
 
@@ -121,28 +122,6 @@ class RetinaNet(keras.Model):
         self._update_metrics(y_for_metrics, predictions["inference"])
 
         return self._metrics_result(loss)
-
-    def _encode_to_ragged(self, nmsed_boxes):
-        boxes = []
-
-        # TODO(lukewood): change to dynamically computed batch size
-        for i in range(self.batch_size):
-            num_detections = nmsed_boxes.valid_detections[i]
-            boxes_recombined = tf.concat(
-                [
-                    nmsed_boxes.nmsed_boxes[i][:num_detections],
-                    tf.expand_dims(
-                        nmsed_boxes.nmsed_classes[i][:num_detections], axis=-1
-                    ),
-                    tf.expand_dims(
-                        nmsed_boxes.nmsed_scores[i][:num_detections], axis=-1
-                    ),
-                ],
-                axis=-1,
-            )
-            boxes.append(boxes_recombined)
-        result = tf.ragged.stack(boxes)
-        return result
 
     def inference(self, x):
         predictions = self.predict(x)

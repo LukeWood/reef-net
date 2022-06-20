@@ -1,14 +1,5 @@
-import keras_cv
-import numpy as np
 import tensorflow as tf
-from absl import flags
-from ml_collections.config_flags import config_flags
-from tensorflow import keras
-
-from reef_net.loaders import load_reef_dataset
 from reef_net.utils import AnchorBox
-from reef_net.utils import convert_to_corners
-
 
 class DecodePredictions(tf.keras.layers.Layer):
     """A Keras layer that decodes predictions of the RetinaNet model.
@@ -28,7 +19,8 @@ class DecodePredictions(tf.keras.layers.Layer):
 
     def __init__(
         self,
-        num_classes=80,
+        num_classes,
+        batch_size,
         confidence_threshold=0.05,
         nms_iou_threshold=0.5,
         max_detections_per_class=100,
@@ -36,13 +28,13 @@ class DecodePredictions(tf.keras.layers.Layer):
         box_variance=[0.1, 0.1, 0.2, 0.2],
         **kwargs
     ):
-        super(DecodePredictions, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.num_classes = num_classes
+        self.batch_size = batch_size
         self.confidence_threshold = confidence_threshold
         self.nms_iou_threshold = nms_iou_threshold
         self.max_detections_per_class = max_detections_per_class
         self.max_detections = max_detections
-
         self._anchor_box = AnchorBox()
         self._box_variance = tf.convert_to_tensor(
             [0.1, 0.1, 0.2, 0.2], dtype=tf.float32
@@ -67,7 +59,7 @@ class DecodePredictions(tf.keras.layers.Layer):
         cls_predictions = tf.nn.sigmoid(predictions[:, :, 4:])
         boxes = self._decode_box_predictions(anchor_boxes[None, ...], box_predictions)
 
-        return tf.image.combined_non_max_suppression(
+        nmsed_boxes = tf.image.combined_non_max_suppression(
             tf.expand_dims(boxes, axis=2),
             cls_predictions,
             self.max_detections_per_class,
@@ -76,46 +68,26 @@ class DecodePredictions(tf.keras.layers.Layer):
             self.confidence_threshold,
             clip_boxes=False,
         )
+        return self._encode_to_ragged(nmsed_boxes)
 
+    def _encode_to_ragged(self, nmsed_boxes):
+        boxes = []
 
-# --- Building Feature Pyramid Network as a custom layer ---
-class FeaturePyramid(keras.layers.Layer):
-    """Builds the Feature Pyramid with the feature maps from the backbone.
-
-    Attributes:
-      num_classes: Number of classes in the dataset.
-      backbone: The backbone to build the feature pyramid from.
-        Currently supports ResNet50 only.
-
-    Also the inpurt shape of individual image is 720x1280
-    """
-
-    def __init__(self, backbone=None, **kwargs):
-        super(FeaturePyramid, self).__init__(name="FeaturePyramid", **kwargs)
-        self.backbone = backbone if backbone else get_backbone()
-        self.conv_c3_1x1 = keras.layers.Conv2D(256, 1, 1, "same")
-        self.conv_c4_1x1 = keras.layers.Conv2D(256, 1, 1, "same")
-        self.conv_c5_1x1 = keras.layers.Conv2D(256, 1, 1, "same")
-        self.conv_c3_3x3 = keras.layers.Conv2D(256, 3, 1, "same")
-        self.conv_c4_3x3 = keras.layers.Conv2D(256, 3, 1, "same")
-        self.conv_c5_3x3 = keras.layers.Conv2D(256, 3, 1, "same")
-        self.conv_c6_3x3 = keras.layers.Conv2D(256, 3, 2, "same")
-        self.conv_c7_3x3 = keras.layers.Conv2D(256, 3, 2, "same")
-        self.upsample_2x = keras.layers.UpSampling2D(2)
-        # self.add_zeros_1 = keras.layers.Add()([x, b])
-
-    def call(self, images, training=False):
-        c3_output, c4_output, c5_output = self.backbone(images, training=training)
-        p3_output = self.conv_c3_1x1(c3_output)
-        p4_output = self.conv_c4_1x1(c4_output)
-        p5_output = self.conv_c5_1x1(c5_output)
-
-        p4_output = p4_output + self.upsample_2x(p5_output)
-        p3_output = p3_output + self.upsample_2x(p4_output)
-        # -- New Layer Added here
-        p3_output = self.conv_c3_3x3(p3_output)
-        p4_output = self.conv_c4_3x3(p4_output)
-        p5_output = self.conv_c5_3x3(p5_output)
-        p6_output = self.conv_c6_3x3(c5_output)
-        p7_output = self.conv_c7_3x3(tf.nn.relu(p6_output))
-        return p3_output, p4_output, p5_output, p6_output, p7_output
+        # TODO(lukewood): change to dynamically computed batch size
+        for i in range(self.batch_size):
+            num_detections = nmsed_boxes.valid_detections[i]
+            boxes_recombined = tf.concat(
+                [
+                    nmsed_boxes.nmsed_boxes[i][:num_detections],
+                    tf.expand_dims(
+                        nmsed_boxes.nmsed_classes[i][:num_detections], axis=-1
+                    ),
+                    tf.expand_dims(
+                        nmsed_boxes.nmsed_scores[i][:num_detections], axis=-1
+                    ),
+                ],
+                axis=-1,
+            )
+            boxes.append(boxes_recombined)
+        result = tf.ragged.stack(boxes)
+        return result
