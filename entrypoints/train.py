@@ -181,9 +181,9 @@ def main(args):
     model.build((None, None, None, 3))
     model.summary()
 
-    epochs = 300
-    steps_per_epoch = 1000
-    validation_steps = 100
+    epochs = config.epochs
+    steps_per_epoch = config.steps_per_epoch
+    validation_steps = config.validation_steps
 
     if FLAGS.debug:
         epochs = 100

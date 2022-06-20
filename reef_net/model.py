@@ -113,7 +113,7 @@ class RetinaNet(keras.Model):
         x, (y_true, y_for_metrics) = data
         x = tf.cast(x, dtype=tf.float32)
 
-        predictions = self(x, training=training)
+        predictions = self(x, training=False)
         loss = self._loss(y_true, predictions["train_preds"])
         for extra_loss in self.losses:
             loss += extra_loss
