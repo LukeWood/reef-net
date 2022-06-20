@@ -17,6 +17,8 @@ config_flags.DEFINE_config_file("config", "configs/main.py")
 
 flags.DEFINE_bool("wandb", False, "Whether to run to wandb")
 flags.DEFINE_bool("debug", False, "Whether or not to use extra debug utilities")
+flags.DEFINE_bool("disable_traceback_filtering", False, "Disables traceback filtering")
+
 flags.DEFINE_string("artifact_dir", None, "Directory to store artifacts")
 flags.DEFINE_string("model_dir", None, "Where to save the model after training")
 flags.DEFINE_string("experiment_name", None, "wandb experiment name")
@@ -77,13 +79,11 @@ def get_checkpoint_path():
 
     return checkpoint_filepath
 
-def load_dataset()
-
 def main(args):
     del args
     config = FLAGS.config
 
-    if FLAGS.debug:
+    if FLAGS.disable_traceback_filtering:
         tf.debugging.disable_traceback_filtering()
 
     try:
@@ -152,7 +152,7 @@ def main(args):
     # print(resnet50_backbone.summary())
     model = RetinaNet(
         config.num_classes,
-        resnet50_backbone,
+        backbone=resnet50_backbone,
         batch_size=config.batch_size,
     )
 

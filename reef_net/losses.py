@@ -44,7 +44,7 @@ class RetinaNetLoss(tf.losses.Loss):
 
         classification_loss = tf.math.reduce_sum(classification_loss, axis=-1)
         box_loss = tf.math.reduce_sum(box_loss, axis=-1)
-        return classification_loss + box_loss, classification_loss, box_loss
+        return (classification_loss + box_loss, classification_loss, box_loss)
 
 
 # --- Implementing Smooth L1 loss and Focal Loss as keras custom losses ---
