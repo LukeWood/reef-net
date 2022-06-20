@@ -7,6 +7,8 @@ from tensorflow import keras
 from reef_net.loaders import load_reef_dataset
 from reef_net.utils import AnchorBox
 from reef_net.utils import convert_to_corners
+from reef_net import losses as losses_lib
+from reef_net import layers as layers_lib
 
 import keras_cv
 
@@ -23,49 +25,6 @@ def get_backbone():
     return keras.Model(
         inputs=[backbone.inputs], outputs=[c3_output, c4_output, c5_output]
     )
-
-
-# --- Building Feature Pyramid Network as a custom layer ---
-class FeaturePyramid(keras.layers.Layer):
-    """Builds the Feature Pyramid with the feature maps from the backbone.
-
-    Attributes:
-      num_classes: Number of classes in the dataset.
-      backbone: The backbone to build the feature pyramid from.
-        Currently supports ResNet50 only.
-
-    Also the inpurt shape of individual image is 720x1280
-    """
-
-    def __init__(self, backbone=None, **kwargs):
-        super(FeaturePyramid, self).__init__(name="FeaturePyramid", **kwargs)
-        self.backbone = backbone if backbone else get_backbone()
-        self.conv_c3_1x1 = keras.layers.Conv2D(256, 1, 1, "same")
-        self.conv_c4_1x1 = keras.layers.Conv2D(256, 1, 1, "same")
-        self.conv_c5_1x1 = keras.layers.Conv2D(256, 1, 1, "same")
-        self.conv_c3_3x3 = keras.layers.Conv2D(256, 3, 1, "same")
-        self.conv_c4_3x3 = keras.layers.Conv2D(256, 3, 1, "same")
-        self.conv_c5_3x3 = keras.layers.Conv2D(256, 3, 1, "same")
-        self.conv_c6_3x3 = keras.layers.Conv2D(256, 3, 2, "same")
-        self.conv_c7_3x3 = keras.layers.Conv2D(256, 3, 2, "same")
-        self.upsample_2x = keras.layers.UpSampling2D(2)
-        # self.add_zeros_1 = keras.layers.Add()([x, b])
-
-    def call(self, images, training=False):
-        c3_output, c4_output, c5_output = self.backbone(images, training=training)
-        p3_output = self.conv_c3_1x1(c3_output)
-        p4_output = self.conv_c4_1x1(c4_output)
-        p5_output = self.conv_c5_1x1(c5_output)
-
-        p4_output = p4_output + self.upsample_2x(p5_output)
-        p3_output = p3_output + self.upsample_2x(p4_output)
-        # -- New Layer Added here
-        p3_output = self.conv_c3_3x3(p3_output)
-        p4_output = self.conv_c4_3x3(p4_output)
-        p5_output = self.conv_c5_3x3(p5_output)
-        p6_output = self.conv_c6_3x3(c5_output)
-        p7_output = self.conv_c7_3x3(tf.nn.relu(p6_output))
-        return p3_output, p4_output, p5_output, p6_output, p7_output
 
 
 # --- Building the classification and box regression heads. ---
@@ -107,148 +66,122 @@ class RetinaNet(keras.Model):
     Attributes:
       num_classes: Number of classes in the dataset.
       backbone: The backbone to build the feature pyramid from.
-        Currently supports ResNet50 only.
     """
 
     def __init__(
-        self, num_classes, backbone=None, alpha=0.25, gamma=2.0, delta=1.0, **kwargs
+        self,
+        num_classes,
+        batch_size,
+        backbone=None,
+        alpha=0.25,
+        gamma=2.0,
+        delta=1.0,
+        **kwargs
     ):
-        super(RetinaNet, self).__init__(name="RetinaNet", **kwargs)
-        self.fpn = FeaturePyramid(backbone)
+        super().__init__(name="RetinaNet", **kwargs)
+        self.fpn = layers_lib.FeaturePyramid(backbone)
         self.num_classes = num_classes
+        self.batch_size = batch_size
 
         prior_probability = tf.constant_initializer(-np.log((1 - 0.01) / 0.01))
-        self.cls_head = build_head(9 * num_classes, prior_probability)
+        self.classification_head = build_head(9 * num_classes, prior_probability)
         self.box_head = build_head(9 * 4, "zeros")
-        self._clf_loss = RetinaNetClassificationLoss(alpha, gamma)
-        self._box_loss = RetinaNetBoxLoss(delta)
-        self._num_classes = num_classes
 
-        self.clf_loss = tf.keras.metrics.Mean(name="clf_loss")
-        self.box_loss = tf.keras.metrics.Mean(name="box_loss")
-        self.gradient_norm = tf.keras.metrics.Mean(name="gradient_norm")
+        self._loss = losses_lib.RetinaNetLoss(
+            num_classes=num_classes,
+            classification_loss=losses_lib.RetinaNetClassificationLoss(alpha, gamma),
+            box_loss=losses_lib.RetinaNetBoxLoss(delta),
+        )
 
-        self.decoder = DecodePredictions(num_classes=num_classes)
+        self.decoder = layers_lib.DecodePredictions(num_classes=num_classes)
+
+    def call(self, x, training=False):
+        features = self.fpn(x, training=training)
+        N = tf.shape(x)[0]
+        cls_outputs = []
+        box_outputs = []
+        for feature in features:
+            box_outputs.append(tf.reshape(self.box_head(feature), [N, -1, 4]))
+            cls_outputs.append(
+                tf.reshape(self.classification_head(feature), [N, -1, self.num_classes])
+            )
+
+        cls_outputs = tf.concat(cls_outputs, axis=1)
+        box_outputs = tf.concat(box_outputs, axis=1)
+        train_preds = tf.concat([box_outputs, cls_outputs], axis=-1)
+
+        decoded = self.decoder(x, train_preds)
+        result = self._encode_to_ragged(decoded)
+        pred_for_inference = result.to_tensor(default_value=-1)
+
+        return {"train_preds": raw_preds, "inference": pred_for_inference}
+
+    def _update_metrics(self, y_for_metrics, result):
+        # COCO metrics are all stored in compiled_metrics
+        # This tf.cond is needed to work around a TensorFlow edge case in Ragged Tensors
+        tf.cond(
+            tf.shape(result)[2] != 0,
+            lambda: self.compiled_metrics.update_state(y_for_metrics, result),
+            lambda: None,
+        )
+
+    def _metrics_result(self, loss):
+        metrics_result = {m.name: m.result() for m in self.metrics}
+        metrics_result["loss"] = loss
+        return metrics_result
 
     def train_step(self, data, training=True):
         x, (y_true, y_for_metrics) = data
         x = tf.cast(x, dtype=tf.float32)
 
         with tf.GradientTape() as tape:
-            y_pred = self(x, training=training)
-            y_pred = tf.cast(y_pred, dtype=tf.float32)
-            box_labels = y_true[:, :, :4]
-            box_predictions = y_pred[:, :, :4]
-            cls_labels = tf.one_hot(
-                tf.cast(y_true[:, :, 4], dtype=tf.int32),
-                depth=self._num_classes,
-                dtype=tf.float32,
+            predictions = self(x, training=training)
+            loss, classification_loss, box_loss = self._loss(
+                y_true, predictions["train_preds"]
             )
-            cls_predictions = y_pred[:, :, 4:]
-            positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)
-            ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
-            clf_loss = self._clf_loss(cls_labels, cls_predictions)
-            box_loss = self._box_loss(box_labels, box_predictions)
-            clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
-            box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)
-            normalizer = tf.reduce_sum(positive_mask, axis=-1)
-            clf_loss = tf.math.divide_no_nan(
-                tf.reduce_sum(clf_loss, axis=-1), normalizer
-            )
-            box_loss = tf.math.divide_no_nan(
-                tf.reduce_sum(box_loss, axis=-1), normalizer
-            )
-
-            clf_loss = tf.math.reduce_sum(clf_loss, axis=-1)
-            box_loss = tf.math.reduce_sum(box_loss, axis=-1)
-            loss = clf_loss + box_loss
-
             for extra_loss in self.losses:
                 loss += extra_loss
 
-        self.clf_loss.update_state(clf_loss)
-        self.box_loss.update_state(box_loss)
+        metrics_result = self.update_metrics()
 
+        self.add_metric(classification_loss, name="classification_loss")
+        self.add_metric(box_loss, name="box_loss")
+        self._update_metrics(y_for_metrics, predictions["inference"])
+
+        # Training specific code
         trainable_vars = self.trainable_variables
-
         gradients = tape.gradient(loss, trainable_vars)
         # clip grads to prevent explosion
         gradients, gradient_norm = tf.clip_by_global_norm(gradients, 5.0)
-        self.gradient_norm.update_state(gradient_norm)
-
+        self.add_metric(gradient_norm, name="gradient_norm")
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
 
-        decoded = self.decoder(x, y_pred)
-        result = self._encode_to_ragged(decoded)
-        result = result.to_tensor(default_value=-1)
-        # COCO metrics are all stored in compiled_metrics
-        tf.cond(
-            tf.shape(result)[2] != 0,
-            lambda: self.compiled_metrics.update_state(y_for_metrics, result),
-            lambda: self.nop(),
-        )
+        # Return metric result
 
-        metrics_result = {m.name: m.result() for m in self.metrics}
-        metrics_result["loss"] = loss
-        return metrics_result
-
-    def nop(self):
-        pass
+        return self._metrics_result(loss)
 
     def test_step(self, data):
         x, (y_true, y_for_metrics) = data
         x = tf.cast(x, dtype=tf.float32)
-        y_pred = self(x, training=False)
-        y_pred = tf.cast(y_pred, dtype=tf.float32)
-        box_labels = y_true[:, :, :4]
-        box_predictions = y_pred[:, :, :4]
-        cls_labels = tf.one_hot(
-            tf.cast(y_true[:, :, 4], dtype=tf.int32),
-            depth=self._num_classes,
-            dtype=tf.float32,
+
+        predictions = self(x, training=training)
+        loss, classification_loss, box_loss = self._loss(
+            y_true, predictions["train_preds"]
         )
-        cls_predictions = y_pred[:, :, 4:]
-        positive_mask = tf.cast(tf.greater(y_true[:, :, 4], -1.0), dtype=tf.float32)
-        ignore_mask = tf.cast(tf.equal(y_true[:, :, 4], -2.0), dtype=tf.float32)
-        clf_loss = self._clf_loss(cls_labels, cls_predictions)
-        box_loss = self._box_loss(box_labels, box_predictions)
-        clf_loss = tf.where(tf.equal(ignore_mask, 1.0), 0.0, clf_loss)
-        box_loss = tf.where(tf.equal(positive_mask, 1.0), box_loss, 0.0)
-        normalizer = tf.reduce_sum(positive_mask, axis=-1)
-        clf_loss = tf.math.divide_no_nan(tf.reduce_sum(clf_loss, axis=-1), normalizer)
-        box_loss = tf.math.divide_no_nan(tf.reduce_sum(box_loss, axis=-1), normalizer)
-
-        clf_loss = tf.math.reduce_sum(clf_loss, axis=-1)
-        box_loss = tf.math.reduce_sum(box_loss, axis=-1)
-        loss = clf_loss + box_loss
-
         for extra_loss in self.losses:
             loss += extra_loss
 
-        self.clf_loss.update_state(clf_loss)
-        self.box_loss.update_state(box_loss)
+        self.add_metric(classification_loss, name="classification_loss")
+        self.add_metric(box_loss, name="box_loss")
+        self._update_metrics(y_for_metrics, predictions["inference"])
 
-        decoded = self.decoder(x, y_pred)
-        result = self._encode_to_ragged(decoded)
-        result = result.to_tensor(default_value=-1)
-        # COCO metrics are all stored in compiled_metrics
-        tf.cond(
-            tf.shape(result)[2] != 0,
-            lambda: self.compiled_metrics.update_state(y_for_metrics, result),
-            lambda: self.nop(),
-        )
-
-        metrics_result = {m.name: m.result() for m in self.metrics}
-        metrics_result["loss"] = loss
-
-        del metrics_result["gradient_norm"]
-        return metrics_result
+        return self._metrics_result(loss)
 
     def _encode_to_ragged(self, nmsed_boxes):
         boxes = []
 
         # TODO(lukewood): change to dynamically computed batch size
-        for i in range(2):
+        for i in range(self.batch_size):
             num_detections = nmsed_boxes.valid_detections[i]
             boxes_recombined = tf.concat(
                 [
@@ -269,138 +202,3 @@ class RetinaNet(keras.Model):
     def inference(self, x):
         predictions = self(x, training=False)
         return self.decoder(x, predictions)
-
-    @property
-    def metrics(self):
-        return super().metrics + [
-            self.clf_loss,
-            self.box_loss,
-            self.gradient_norm,
-        ]
-
-    def call(self, image, training=False):
-        features = self.fpn(image, training=training)
-        N = tf.shape(image)[0]
-        cls_outputs = []
-        box_outputs = []
-        for feature in features:
-            box_outputs.append(tf.reshape(self.box_head(feature), [N, -1, 4]))
-            cls_outputs.append(
-                tf.reshape(self.cls_head(feature), [N, -1, self.num_classes])
-            )
-
-        cls_outputs = tf.concat(cls_outputs, axis=1)
-        box_outputs = tf.concat(box_outputs, axis=1)
-        return tf.concat([box_outputs, cls_outputs], axis=-1)
-
-
-# --- Implementing a custom layer to decode predictions ---
-class DecodePredictions(tf.keras.layers.Layer):
-    """A Keras layer that decodes predictions of the RetinaNet model.
-
-    Attributes:
-      num_classes: Number of classes in the dataset
-      confidence_threshold: Minimum class probability, below which detections
-        are pruned.
-      nms_iou_threshold: IOU threshold for the NMS operation
-      max_detections_per_class: Maximum number of detections to retain per
-       class.
-      max_detections: Maximum number of detections to retain across all
-        classes.
-      box_variance: The scaling factors used to scale the bounding box
-        predictions.
-    """
-
-    def __init__(
-        self,
-        num_classes=80,
-        confidence_threshold=0.05,
-        nms_iou_threshold=0.5,
-        max_detections_per_class=100,
-        max_detections=100,
-        box_variance=[0.1, 0.1, 0.2, 0.2],
-        **kwargs
-    ):
-        super(DecodePredictions, self).__init__(**kwargs)
-        self.num_classes = num_classes
-        self.confidence_threshold = confidence_threshold
-        self.nms_iou_threshold = nms_iou_threshold
-        self.max_detections_per_class = max_detections_per_class
-        self.max_detections = max_detections
-
-        self._anchor_box = AnchorBox()
-        self._box_variance = tf.convert_to_tensor(
-            [0.1, 0.1, 0.2, 0.2], dtype=tf.float32
-        )
-
-    def _decode_box_predictions(self, anchor_boxes, box_predictions):
-        boxes = box_predictions * self._box_variance
-        boxes = tf.concat(
-            [
-                boxes[:, :, :2] * anchor_boxes[:, :, 2:] + anchor_boxes[:, :, :2],
-                tf.math.exp(boxes[:, :, 2:]) * anchor_boxes[:, :, 2:],
-            ],
-            axis=-1,
-        )
-        boxes_transformed = convert_to_corners(boxes)
-        return boxes_transformed
-
-    def call(self, images, predictions):
-        image_shape = tf.cast(tf.shape(images), dtype=tf.float32)
-        anchor_boxes = self._anchor_box.get_anchors(image_shape[1], image_shape[2])
-        box_predictions = predictions[:, :, :4]
-        cls_predictions = tf.nn.sigmoid(predictions[:, :, 4:])
-        boxes = self._decode_box_predictions(anchor_boxes[None, ...], box_predictions)
-
-        return tf.image.combined_non_max_suppression(
-            tf.expand_dims(boxes, axis=2),
-            cls_predictions,
-            self.max_detections_per_class,
-            self.max_detections,
-            self.nms_iou_threshold,
-            self.confidence_threshold,
-            clip_boxes=False,
-        )
-
-
-# --- Implementing Smooth L1 loss and Focal Loss as keras custom losses ---
-class RetinaNetBoxLoss(tf.losses.Loss):
-    """Implements Smooth L1 loss"""
-
-    def __init__(self, delta):
-        super(RetinaNetBoxLoss, self).__init__(
-            reduction="none", name="RetinaNetBoxLoss"
-        )
-        self._delta = delta
-
-    def call(self, y_true, y_pred):
-        difference = y_true - y_pred
-        absolute_difference = tf.abs(difference)
-        squared_difference = difference**2
-        loss = tf.where(
-            tf.less(absolute_difference, self._delta),
-            0.5 * squared_difference,
-            absolute_difference - 0.5,
-        )
-        return tf.reduce_sum(loss, axis=-1)
-
-
-class RetinaNetClassificationLoss(tf.losses.Loss):
-    """Implements Focal loss"""
-
-    def __init__(self, alpha, gamma):
-        super(RetinaNetClassificationLoss, self).__init__(
-            reduction="none", name="RetinaNetClassificationLoss"
-        )
-        self._alpha = alpha
-        self._gamma = gamma
-
-    def call(self, y_true, y_pred):
-        cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(
-            labels=y_true, logits=y_pred
-        )
-        probs = tf.nn.sigmoid(y_pred)
-        alpha = tf.where(tf.equal(y_true, 1.0), self._alpha, (1.0 - self._alpha))
-        pt = tf.where(tf.equal(y_true, 1.0), probs, 1 - probs)
-        loss = alpha * tf.pow(1.0 - pt, self._gamma) * cross_entropy
-        return tf.reduce_sum(loss, axis=-1)

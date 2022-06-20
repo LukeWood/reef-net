@@ -150,7 +150,11 @@ def main(args):
     strategy = tf.distribute.MirroredStrategy()
     resnet50_backbone = get_backbone()
     # print(resnet50_backbone.summary())
-    model = RetinaNet(config.num_classes, resnet50_backbone)
+    model = RetinaNet(
+        config.num_classes,
+        resnet50_backbone,
+        batch_size=config.batch_size,
+    )
 
     learning_rates = [2.5e-06, 0.000625, 0.00125, 0.0025, 0.00025, 2.5e-05]
     learning_rate_boundaries = [125, 250, 500, 240000, 360000]
@@ -163,8 +167,10 @@ def main(args):
         optimizer=optimizer,
         # run_eagerly=FLAGS.debug,
         metrics=[
-            keras_cv.metrics.COCOMeanAveragePrecision(class_ids=[1], bounding_box_format='xyxy'),
-            keras_cv.metrics.COCORecall(class_ids=[1], bounding_box_format='xyxy'),
+            keras_cv.metrics.COCOMeanAveragePrecision(
+                class_ids=[1], bounding_box_format="xyxy"
+            ),
+            keras_cv.metrics.COCORecall(class_ids=[1], bounding_box_format="xyxy"),
         ],
     )
     model.build((None, None, None, 3))
