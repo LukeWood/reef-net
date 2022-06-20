@@ -2,9 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from reef_net.utils import convert_to_xywh
-from reef_net.utils import convert_to_corners
-from reef_net.utils import swap_xy
+from reef_net.utils import convert_to_corners, convert_to_xywh, swap_xy
 
 
 def random_flip_horizontal(image, boxes):

@@ -1,3 +1,4 @@
+import keras_cv
 import numpy as np
 import tensorflow as tf
 from absl import flags
@@ -5,10 +6,7 @@ from ml_collections.config_flags import config_flags
 from tensorflow import keras
 
 from reef_net.loaders import load_reef_dataset
-from reef_net.utils import AnchorBox
-from reef_net.utils import convert_to_corners
-
-import keras_cv
+from reef_net.utils import AnchorBox, convert_to_corners
 
 
 class RetinaNetLoss(tf.losses.Loss):

@@ -1,16 +1,15 @@
+import keras_cv
 import numpy as np
 import tensorflow as tf
 from absl import flags
 from ml_collections.config_flags import config_flags
 from tensorflow import keras
 
-from reef_net.loaders import load_reef_dataset
-from reef_net.utils import AnchorBox
-from reef_net.utils import convert_to_corners
-from reef_net import losses as losses_lib
 from reef_net import layers as layers_lib
+from reef_net import losses as losses_lib
+from reef_net.loaders import load_reef_dataset
+from reef_net.utils import AnchorBox, convert_to_corners
 
-import keras_cv
 
 # --- Building the ResNet50 backbone ---
 def get_backbone():

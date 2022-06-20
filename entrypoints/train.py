@@ -1,23 +1,17 @@
 import os
 from datetime import datetime
 
+import keras_cv
 import tensorflow as tf
-from absl import app
-from absl import flags
-from absl import logging
+import wandb
+from absl import app, flags, logging
 from ml_collections.config_flags import config_flags
 
-import wandb
-from reef_net.loaders import load_reef_dataset, load_n_images
-from reef_net.model import DecodePredictions
-from reef_net.model import RetinaNet
-from reef_net.model import get_backbone
-from reef_net.preprocess import preprocess_data
-from reef_net.preprocess import resize_and_pad_image
-from reef_net.utils import LabelEncoder
-from reef_net.utils import visualize_detections
 from reef_net.callbacks import VisualizePredictions
-import keras_cv
+from reef_net.loaders import load_n_images, load_reef_dataset
+from reef_net.model import RetinaNet, get_backbone
+from reef_net.preprocess import preprocess_data, resize_and_pad_image
+from reef_net.utils import LabelEncoder, visualize_detections
 
 config_flags.DEFINE_config_file("config", "configs/main.py")
 
@@ -25,6 +19,7 @@ flags.DEFINE_bool("wandb", False, "Whether to run to wandb")
 flags.DEFINE_bool("debug", False, "Whether or not to use extra debug utilities")
 flags.DEFINE_string("artifact_dir", None, "Directory to store artifacts")
 flags.DEFINE_string("model_dir", None, "Where to save the model after training")
+flags.DEFINE_string("experiment_name", None, "wandb experiment name")
 
 FLAGS = flags.FLAGS
 
@@ -82,6 +77,7 @@ def get_checkpoint_path():
 
     return checkpoint_filepath
 
+def load_dataset()
 
 def main(args):
     del args
@@ -105,14 +101,18 @@ def main(args):
             entity="reef-net",
             config=config.to_dict(),
         )
+        if FLAGS.experiment_name:
+            wandb.run.name = FLAGS.experiment_name
+            wandb.run.save()
 
     autotune = tf.data.AUTOTUNE
     label_encoder = LabelEncoder()
 
     ########## ---------- XXXXXXXXXX ---------- ##########
-    # This is for training data
+    # This is training data
     base_path = config.custom_path
     train_path = os.path.abspath(os.path.join(base_path, config.train_path))
+
     train_ds, train_dataset_size = load_reef_dataset(
         config, train_path, min_boxes_per_image=1
     )
@@ -128,7 +128,7 @@ def main(args):
     train_ds = train_ds.prefetch(autotune)  # This line is added
 
     ########## ---------- XXXXXXXXXX ---------- ##########
-    # This is for validation dataset
+    # This is validation data
     base_path = config.custom_path
     val_path = os.path.abspath(os.path.join(base_path, config.val_path))
     val_ds, val_dataset_size = load_reef_dataset(

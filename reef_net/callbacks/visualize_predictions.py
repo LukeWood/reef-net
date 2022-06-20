@@ -1,9 +1,11 @@
-from tensorflow import keras
 import os
-import numpy as np
+
 import matplotlib.pyplot as plt
-from reef_net.preprocess import resize_and_pad_image
+import numpy as np
 import tensorflow as tf
+from tensorflow import keras
+
+from reef_net.preprocess import resize_and_pad_image
 from reef_net.utils import swap_xy
 
 
