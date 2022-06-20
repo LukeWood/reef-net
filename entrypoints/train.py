@@ -132,7 +132,7 @@ def main(args):
 
     train_ds = train_ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
     train_ds = train_ds.apply(tf.data.experimental.ignore_errors())
-    train_ds = train_ds.prefetch(autotune)  # This line is added
+    train_ds = train_ds.prefetch(autotune)
 
     ########## ---------- XXXXXXXXXX ---------- ##########
     # This is validation data
@@ -150,13 +150,12 @@ def main(args):
 
     val_ds = val_ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
     val_ds = val_ds.apply(tf.data.experimental.ignore_errors())
-    val_ds = val_ds.prefetch(autotune)  # This line is added
+    val_ds = val_ds.prefetch(autotune)
 
     checkpoint_filepath = get_checkpoint_path()
 
     strategy = tf.distribute.MirroredStrategy()
     resnet50_backbone = get_backbone()
-    # print(resnet50_backbone.summary())
     model = RetinaNet(
         config.num_classes,
         backbone=resnet50_backbone,
@@ -172,7 +171,6 @@ def main(args):
     optimizer = tf.optimizers.SGD(learning_rate=learning_rate_fn, momentum=0.9)
     model.compile(
         optimizer=optimizer,
-        # run_eagerly=FLAGS.debug,
         metrics=[
             keras_cv.metrics.COCOMeanAveragePrecision(
                 class_ids=[1], bounding_box_format="xyxy"
@@ -184,7 +182,7 @@ def main(args):
     model.summary()
 
     epochs = 300
-    steps_per_epoch = 1000  # train_dataset_size // (config.batch_size)
+    steps_per_epoch = 1000
     validation_steps = 100
 
     if FLAGS.debug:

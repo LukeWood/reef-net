@@ -61,6 +61,7 @@ class VisualizePredictions(keras.callbacks.Callback):
         model: RetinaNet model to generate the predictions,
         test_images: array-like of images to predict detections for.
         artifact_dir: directory to store images in.
+        subdir_name: subdirectory to store images in
     """
 
     def __init__(self, test_image, test_boxes, artifact_dir, subdir_name, **kwargs):
