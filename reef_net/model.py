@@ -47,7 +47,9 @@ class RetinaNet(keras.Model):
             box_loss=losses_lib.RetinaNetBoxLoss(delta),
         )
 
-        self.decoder = layers_lib.DecodePredictions(num_classes=num_classes, batch_size=batch_size)
+        self.decoder = layers_lib.DecodePredictions(
+            num_classes=num_classes, batch_size=batch_size
+        )
 
         self.gradient_norm_metric = tf.keras.metrics.Mean(name="gradient_norm")
 

@@ -1,5 +1,7 @@
 import tensorflow as tf
+
 from reef_net.utils import AnchorBox
+
 
 class DecodePredictions(tf.keras.layers.Layer):
     """A Keras layer that decodes predictions of the RetinaNet model.

@@ -1,2 +1,2 @@
-from reef_net.layers.feature_pyramid import FeaturePyramid
 from reef_net.layers.decode_predictions import DecodePredictions
+from reef_net.layers.feature_pyramid import FeaturePyramid
