@@ -8,7 +8,8 @@ from tensorflow import keras
 from reef_net import layers as layers_lib
 from reef_net import losses as losses_lib
 from reef_net.loaders import load_reef_dataset
-from reef_net.utils import AnchorBox, convert_to_corners
+from reef_net.utils import AnchorBox
+from reef_net.utils import convert_to_corners
 
 
 # --- Building RetinaNet using a subclassed model ---
@@ -90,9 +91,7 @@ class RetinaNet(keras.Model):
 
         with tf.GradientTape() as tape:
             predictions = self(x, training=training)
-            loss = self._loss(
-                y_true, predictions["train_preds"]
-            )
+            loss = self._loss(y_true, predictions["train_preds"])
             for extra_loss in self.losses:
                 loss += extra_loss
 
@@ -115,9 +114,7 @@ class RetinaNet(keras.Model):
         x = tf.cast(x, dtype=tf.float32)
 
         predictions = self(x, training=training)
-        loss = self._loss(
-            y_true, predictions["train_preds"]
-        )
+        loss = self._loss(y_true, predictions["train_preds"])
         for extra_loss in self.losses:
             loss += extra_loss
 

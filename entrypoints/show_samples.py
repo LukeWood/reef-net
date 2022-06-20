@@ -3,11 +3,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 import wandb
-from absl import app, flags, logging
+from absl import app
+from absl import flags
+from absl import logging
 from ml_collections.config_flags import config_flags
 
 import reef_net
-from reef_net.utils import convert_to_corners, convert_to_xywh, swap_xy
+from reef_net.utils import convert_to_corners
+from reef_net.utils import convert_to_xywh
+from reef_net.utils import swap_xy
 
 FLAGS = flags.FLAGS
 

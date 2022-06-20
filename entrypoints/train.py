@@ -4,14 +4,20 @@ from datetime import datetime
 import keras_cv
 import tensorflow as tf
 import wandb
-from absl import app, flags, logging
+from absl import app
+from absl import flags
+from absl import logging
 from ml_collections.config_flags import config_flags
 
 from reef_net.callbacks import VisualizePredictions
-from reef_net.loaders import load_n_images, load_reef_dataset
-from reef_net.model import RetinaNet, get_backbone
-from reef_net.preprocess import preprocess_data, resize_and_pad_image
-from reef_net.utils import LabelEncoder, visualize_detections
+from reef_net.loaders import load_n_images
+from reef_net.loaders import load_reef_dataset
+from reef_net.model import RetinaNet
+from reef_net.model import get_backbone
+from reef_net.preprocess import preprocess_data
+from reef_net.preprocess import resize_and_pad_image
+from reef_net.utils import LabelEncoder
+from reef_net.utils import visualize_detections
 
 config_flags.DEFINE_config_file("config", "configs/main.py")
 
@@ -78,6 +84,7 @@ def get_checkpoint_path():
     print("Checkpoint filepath:", checkpoint_filepath)
 
     return checkpoint_filepath
+
 
 def main(args):
     del args
