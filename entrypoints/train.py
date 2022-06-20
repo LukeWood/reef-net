@@ -87,15 +87,16 @@ def get_checkpoint_path():
 
 
 def get_metrics(config):
+    ids = list(range(config.num_classes))
     if config.metrics == "basic":
         return [
             keras_cv.metrics.COCOMeanAveragePrecision(
-                class_ids=range(config.num_classes),
+                class_ids=ids,
                 bounding_box_format="xyxy",
                 name="Mean Average Precision",
             ),
             keras_cv.metrics.COCORecall(
-                class_ids=range(config.num_classes),
+                class_ids=ids,
                 bounding_box_format="xyxy",
                 name="Recall",
             ),

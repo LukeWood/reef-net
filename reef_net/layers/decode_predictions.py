@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+from keras_cv import bounding_box
 from reef_net.utils import AnchorBox
 
 
@@ -51,7 +51,7 @@ class DecodePredictions(tf.keras.layers.Layer):
             ],
             axis=-1,
         )
-        boxes_transformed = convert_to_corners(boxes)
+        boxes_transformed = bounding_box.convert_format(boxes, source='xywh', target='xyxy')
         return boxes_transformed
 
     def call(self, images, predictions):

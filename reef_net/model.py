@@ -69,13 +69,14 @@ class RetinaNet(keras.Model):
         train_preds = tf.concat([box_outputs, cls_outputs], axis=-1)
 
         decoded = self.decoder(x, train_preds)
-        pred_for_inference = result.to_tensor(default_value=-1)
+        pred_for_inference = decoded.to_tensor(default_value=-1)
 
         return {"train_preds": train_preds, "inference": pred_for_inference}
 
     def _update_metrics(self, y_for_metrics, result):
         # COCO metrics are all stored in compiled_metrics
         # This tf.cond is needed to work around a TensorFlow edge case in Ragged Tensors
+        tf.print(result)
         tf.cond(
             tf.shape(result)[2] != 0,
             lambda: self.compiled_metrics.update_state(y_for_metrics, result),
