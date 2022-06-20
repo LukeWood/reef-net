@@ -199,5 +199,5 @@ class RetinaNet(keras.Model):
         return result
 
     def inference(self, x):
-        predictions = self(x, training=False)
-        return self.decoder(x, predictions)
+        predictions = self.predict(x)
+        return predictions["inference"]
