@@ -69,7 +69,6 @@ class RetinaNet(keras.Model):
         train_preds = tf.concat([box_outputs, cls_outputs], axis=-1)
 
         decoded = self.decoder(x, train_preds)
-        result = self._encode_to_ragged(decoded)
         pred_for_inference = result.to_tensor(default_value=-1)
 
         return {"train_preds": train_preds, "inference": pred_for_inference}
