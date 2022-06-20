@@ -104,7 +104,7 @@ def load_reef_dataset(config, csv_path, min_boxes_per_image=0):
             bbox[:, 2] = (annotations[:, 3] + annotations[:, 1]) / img_h
             bbox[:, 3] = (annotations[:, 2] + annotations[:, 0]) / img_w
 
-            category = [[1] * np.array(annotations).shape[0]]
+            category = [[0] * np.array(annotations).shape[0]]
             category = list(np.concatenate(category).flat)
             yield (img, bbox, category)
 

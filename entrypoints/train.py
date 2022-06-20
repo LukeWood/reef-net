@@ -86,6 +86,96 @@ def get_checkpoint_path():
     return checkpoint_filepath
 
 
+def get_metrics(config):
+    if config.metrics == "basic":
+        return [
+            keras_cv.metrics.COCOMeanAveragePrecision(
+                class_ids=range(config.num_classes),
+                bounding_box_format="xyxy",
+                name="Mean Average Precision",
+            ),
+            keras_cv.metrics.COCORecall(
+                class_ids=range(config.num_classes),
+                bounding_box_format="xyxy",
+                name="Recall",
+            ),
+        ]
+    if config.metrics == "full":
+        return [
+            keras_cv.metrics.COCOMeanAveragePrecision(
+                class_ids=ids,
+                bounding_box_format="xywh",
+                name="Standard MaP",
+            ),
+            keras_cv.metrics.COCOMeanAveragePrecision(
+                class_ids=ids,
+                bounding_box_format="xywh",
+                iou_thresholds=[0.5],
+                name="MaP IoU=0.5",
+            ),
+            keras_cv.metrics.COCOMeanAveragePrecision(
+                class_ids=ids,
+                bounding_box_format="xywh",
+                iou_thresholds=[0.75],
+                name="MaP IoU=0.75",
+            ),
+            keras_cv.metrics.COCOMeanAveragePrecision(
+                class_ids=ids,
+                bounding_box_format="xywh",
+                area_range=(0, 32**2),
+                name="MaP Small Objects",
+            ),
+            keras_cv.metrics.COCOMeanAveragePrecision(
+                class_ids=ids,
+                bounding_box_format="xywh",
+                area_range=(32**2, 96**2),
+                name="MaP Medium Objects",
+            ),
+            keras_cv.metrics.COCOMeanAveragePrecision(
+                class_ids=ids,
+                bounding_box_format="xywh",
+                area_range=(96**2, 1e9**2),
+                name="MaP Large Objects",
+            ),
+            keras_cv.metrics.COCORecall(
+                class_ids=ids,
+                bounding_box_format="xywh",
+                max_detections=1,
+                name="Recall 1 Detection",
+            ),
+            keras_cv.metrics.COCORecall(
+                class_ids=ids,
+                bounding_box_format="xywh",
+                max_detections=10,
+                name="Recall 10 Detections",
+            ),
+            keras_cv.metrics.COCORecall(
+                class_ids=ids,
+                bounding_box_format="xywh",
+                max_detections=100,
+                name="Standard Recall",
+            ),
+            keras_cv.metrics.COCORecall(
+                class_ids=ids,
+                bounding_box_format="xywh",
+                area_range=(0, 32**2),
+                name="Recall Small Objects",
+            ),
+            keras_cv.metrics.COCORecall(
+                class_ids=ids,
+                bounding_box_format="xywh",
+                area_range=(32**2, 96**2),
+                name="Recall Medium Objects",
+            ),
+            keras_cv.metrics.COCORecall(
+                class_ids=ids,
+                bounding_box_format="xywh",
+                area_range=(96**2, 1e9**2),
+                name="Recall Large Objects",
+            ),
+        ]
+
+
 def main(args):
     del args
     config = FLAGS.config
@@ -169,15 +259,7 @@ def main(args):
     )
 
     optimizer = tf.optimizers.SGD(learning_rate=learning_rate_fn, momentum=0.9)
-    model.compile(
-        optimizer=optimizer,
-        metrics=[
-            keras_cv.metrics.COCOMeanAveragePrecision(
-                class_ids=[1], bounding_box_format="xyxy"
-            ),
-            keras_cv.metrics.COCORecall(class_ids=[1], bounding_box_format="xyxy"),
-        ],
-    )
+    model.compile(optimizer=optimizer, metrics=get_metrics(config))
     model.build((None, None, None, 3))
     model.summary()
 
