@@ -14,7 +14,7 @@ from reef_net.loaders import load_n_images
 from reef_net.loaders import load_reef_dataset
 from reef_net.model import RetinaNet
 from reef_net.model import get_backbone
-from reef_net.preprocesing import create_preprocessing_function
+from reef_net.preprocessing import create_preprocessing_function
 from reef_net.utils import LabelEncoder
 from reef_net.utils import visualize_detections
 

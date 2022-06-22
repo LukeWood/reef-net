@@ -3,7 +3,7 @@ from reef_net.preprocessing.resize_and_pad_image import resize_and_pad_image
 from reef_net.utils import convert_to_corners
 from reef_net.utils import convert_to_xywh
 from reef_net.utils import swap_xy
-
+import tensorflow as tf
 
 def noop(image, bounding_boxes):
     return image, bounding_boxes
@@ -50,14 +50,14 @@ def create_preprocessing_function(augmentation_mode):
         image, image_shape, _ = resize_and_pad_image(image)
         corners_boxes = tf.stack(
             [
-                bbox[:, 0] * image_shape[1],
-                bbox[:, 1] * image_shape[0],
-                bbox[:, 2] * image_shape[1],
-                bbox[:, 3] * image_shape[0],
+                bounding_boxes[:, 0] * image_shape[1],
+                bounding_boxes[:, 1] * image_shape[0],
+                bounding_boxes[:, 2] * image_shape[1],
+                bounding_boxes[:, 3] * image_shape[0],
             ],
             axis=-1,
         )
         xywh_boxes = convert_to_xywh(corners_boxes)
-        return image, xywh_boxes, corners_boxes, class_id
+        return image, xywh_boxes, corners_boxes, class_ids
 
     return preprocess
