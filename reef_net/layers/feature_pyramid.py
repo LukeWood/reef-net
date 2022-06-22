@@ -1,5 +1,6 @@
-from tensorflow import keras
 import tensorflow as tf
+from tensorflow import keras
+
 
 # --- Building Feature Pyramid Network as a custom layer ---
 class FeaturePyramid(keras.layers.Layer):

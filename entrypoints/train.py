@@ -14,8 +14,7 @@ from reef_net.loaders import load_n_images
 from reef_net.loaders import load_reef_dataset
 from reef_net.model import RetinaNet
 from reef_net.model import get_backbone
-from reef_net.preprocess import preprocess_data
-from reef_net.preprocess import resize_and_pad_image
+from reef_net.preprocesing import create_preprocessing_function
 from reef_net.utils import LabelEncoder
 from reef_net.utils import visualize_detections
 
@@ -206,6 +205,11 @@ def main(args):
     autotune = tf.data.AUTOTUNE
     label_encoder = LabelEncoder()
 
+    train_preprocessing_function = create_preprocessing_function(
+        augmentation_mode=config.augmentation_mode
+    )
+    eval_preprocessing_function = create_preprocessing_function(augmentation_mode=None)
+
     ########## ---------- XXXXXXXXXX ---------- ##########
     # This is training data
     base_path = config.custom_path
@@ -214,7 +218,7 @@ def main(args):
     train_ds, train_dataset_size = load_reef_dataset(
         config, train_path, min_boxes_per_image=1
     )
-    train_ds = train_ds.map(preprocess_data, num_parallel_calls=autotune)
+    train_ds = train_ds.map(train_preprocessing_function, num_parallel_calls=autotune)
     train_ds = train_ds.shuffle(config.batch_size * 8)
     train_ds = train_ds.repeat()
     train_ds = train_ds.padded_batch(
@@ -232,7 +236,7 @@ def main(args):
     val_ds, val_dataset_size = load_reef_dataset(
         config, val_path, min_boxes_per_image=1
     )
-    val_ds = val_ds.map(preprocess_data, num_parallel_calls=autotune)
+    val_ds = val_ds.map(eval_preprocessing_function, num_parallel_calls=autotune)
     val_ds = val_ds.shuffle(config.batch_size * 8)
     val_ds = val_ds.repeat()
     val_ds = val_ds.padded_batch(
