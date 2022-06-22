@@ -12,6 +12,7 @@ from ml_collections.config_flags import config_flags
 from reef_net.callbacks import VisualizePredictions
 from reef_net.loaders import load_n_images
 from reef_net.loaders import load_reef_dataset
+from reef_net.metrics import get_metrics
 from reef_net.model import RetinaNet
 from reef_net.model import get_backbone
 from reef_net.preprocessing import create_preprocessing_function
@@ -29,6 +30,7 @@ flags.DEFINE_string("model_dir", None, "Where to save the model after training")
 flags.DEFINE_string("experiment_name", None, "wandb experiment name")
 
 FLAGS = flags.FLAGS
+AUTOTUNE = tf.data.AUTOTUNE
 
 
 def get_callbacks(config, checkpoint_filepath, val_path, train_path):
@@ -85,95 +87,18 @@ def get_checkpoint_path():
     return checkpoint_filepath
 
 
-def get_metrics(config):
-    ids = list(range(config.num_classes))
-    if config.metrics == "basic":
-        return [
-            keras_cv.metrics.COCOMeanAveragePrecision(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                name="Mean Average Precision",
-            ),
-            keras_cv.metrics.COCORecall(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                name="Recall",
-            ),
-        ]
-    if config.metrics == "full":
-        return [
-            keras_cv.metrics.COCOMeanAveragePrecision(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                name="Standard MaP",
-            ),
-            keras_cv.metrics.COCOMeanAveragePrecision(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                iou_thresholds=[0.5],
-                name="MaP IoU=0.5",
-            ),
-            keras_cv.metrics.COCOMeanAveragePrecision(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                iou_thresholds=[0.75],
-                name="MaP IoU=0.75",
-            ),
-            keras_cv.metrics.COCOMeanAveragePrecision(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                area_range=(0, 32**2),
-                name="MaP Small Objects",
-            ),
-            keras_cv.metrics.COCOMeanAveragePrecision(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                area_range=(32**2, 96**2),
-                name="MaP Medium Objects",
-            ),
-            keras_cv.metrics.COCOMeanAveragePrecision(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                area_range=(96**2, 1e9**2),
-                name="MaP Large Objects",
-            ),
-            keras_cv.metrics.COCORecall(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                max_detections=1,
-                name="Recall 1 Detection",
-            ),
-            keras_cv.metrics.COCORecall(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                max_detections=10,
-                name="Recall 10 Detections",
-            ),
-            keras_cv.metrics.COCORecall(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                max_detections=100,
-                name="Standard Recall",
-            ),
-            keras_cv.metrics.COCORecall(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                area_range=(0, 32**2),
-                name="Recall Small Objects",
-            ),
-            keras_cv.metrics.COCORecall(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                area_range=(32**2, 96**2),
-                name="Recall Medium Objects",
-            ),
-            keras_cv.metrics.COCORecall(
-                class_ids=ids,
-                bounding_box_format="xyxy",
-                area_range=(96**2, 1e9**2),
-                name="Recall Large Objects",
-            ),
-        ]
+def prepare_dataset(dataset, label_encoder, preprocessing_function, batch_size=8):
+    dataset = dataset.map(preprocessing_function, num_parallel_calls=AUTOTUNE)
+    dataset = dataset.shuffle(batch_size * 8)
+    dataset = dataset.repeat()
+    dataset = dataset.padded_batch(
+        batch_size, padding_values=(0.0, 1e-8, 1e-8, -1), drop_remainder=True
+    )
+
+    dataset = dataset.map(label_encoder.encode_batch, num_parallel_calls=AUTOTUNE)
+    dataset = dataset.apply(tf.data.experimental.ignore_errors())
+    dataset = dataset.prefetch(AUTOTUNE)
+    return dataset
 
 
 def main(args):
@@ -202,53 +127,42 @@ def main(args):
             wandb.run.name = FLAGS.experiment_name
             wandb.run.save()
 
-    autotune = tf.data.AUTOTUNE
     label_encoder = LabelEncoder()
 
+    ########## ---------- XXXXXXXXXX ---------- ##########
     train_preprocessing_function = create_preprocessing_function(
         augmentation_mode=config.augmentation_mode
     )
     eval_preprocessing_function = create_preprocessing_function(augmentation_mode=None)
 
     ########## ---------- XXXXXXXXXX ---------- ##########
-    # This is training data
+    # Load training data
     base_path = config.custom_path
     train_path = os.path.abspath(os.path.join(base_path, config.train_path))
 
     train_ds, train_dataset_size = load_reef_dataset(
         config, train_path, min_boxes_per_image=1
     )
-    train_ds = train_ds.map(train_preprocessing_function, num_parallel_calls=autotune)
-    train_ds = train_ds.shuffle(config.batch_size * 8)
-    train_ds = train_ds.repeat()
-    train_ds = train_ds.padded_batch(
-        config.batch_size, padding_values=(0.0, 1e-8, 1e-8, -1), drop_remainder=True
+    train_ds = prepare_dataset(
+        train_ds,
+        label_encoder,
+        train_preprocessing_function,
+        batch_size=config.batch_size,
     )
 
-    train_ds = train_ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
-    train_ds = train_ds.apply(tf.data.experimental.ignore_errors())
-    train_ds = train_ds.prefetch(autotune)
-
     ########## ---------- XXXXXXXXXX ---------- ##########
-    # This is validation data
-    base_path = config.custom_path
+    # Load validation data
     val_path = os.path.abspath(os.path.join(base_path, config.val_path))
     val_ds, val_dataset_size = load_reef_dataset(
         config, val_path, min_boxes_per_image=1
     )
-    val_ds = val_ds.map(eval_preprocessing_function, num_parallel_calls=autotune)
-    val_ds = val_ds.shuffle(config.batch_size * 8)
-    val_ds = val_ds.repeat()
-    val_ds = val_ds.padded_batch(
-        config.batch_size, padding_values=(0.0, 1e-8, 1e-8, -1), drop_remainder=True
+    val_ds = prepare_dataset(
+        val_ds, label_encoder, eval_preprocessing_function, batch_size=config.batch_size
     )
-
-    val_ds = val_ds.map(label_encoder.encode_batch, num_parallel_calls=autotune)
-    val_ds = val_ds.apply(tf.data.experimental.ignore_errors())
-    val_ds = val_ds.prefetch(autotune)
-
     checkpoint_filepath = get_checkpoint_path()
 
+    ########## ---------- XXXXXXXXXX ---------- ##########
+    # Create model + distribution strategy + optimizer
     strategy = tf.distribute.MirroredStrategy()
     resnet50_backbone = get_backbone()
     model = RetinaNet(
@@ -264,7 +178,10 @@ def main(args):
     )
 
     optimizer = tf.optimizers.SGD(learning_rate=learning_rate_fn, momentum=0.9)
-    model.compile(optimizer=optimizer, metrics=get_metrics(config))
+    model.compile(
+        optimizer=optimizer,
+        metrics=get_metrics(metrics=config.metrics, num_classes=config.num_classes),
+    )
     model.build((None, None, None, 3))
     model.summary()
 
@@ -276,7 +193,11 @@ def main(args):
         epochs = 100
         steps_per_epoch = 1
         validation_steps = 1
-    cbs = (get_callbacks(config, checkpoint_filepath, val_path, train_path),)
+
+    cbs = get_callbacks(config, checkpoint_filepath, val_path, train_path)
+
+    ########## ---------- XXXXXXXXXX ---------- ##########
+    # train
     model.fit(
         train_ds,
         validation_data=val_ds,
