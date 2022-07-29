@@ -111,7 +111,7 @@ def load_reef_dataset(config, csv_path, min_boxes_per_image=0):
     return tf.data.Dataset.from_generator(
         dataset_generator,
         output_signature=(
-            tf.TensorSpec(shape=(None, None, 3), dtype=tf.float32),
+            tf.TensorSpec(shape=(720, 1280, 3), dtype=tf.float32),
             tf.TensorSpec(shape=(None, 4), dtype=tf.float32),
             tf.TensorSpec(shape=(None,), dtype=tf.int32),
         ),
