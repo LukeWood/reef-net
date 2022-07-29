@@ -11,12 +11,13 @@ from absl import logging
 from loss import RetinaNetLoss
 from ml_collections.config_flags import config_flags
 
-from reef_net.callbacks import VisualizePredictions
 from reef_net.loaders import load_n_images
 from reef_net.loaders import load_reef_dataset
 from reef_net.metrics import get_metrics
 from reef_net.preprocessing import create_preprocessing_function
 from reef_net.utils import visualize_detections
+
+from visualize_detections import VisualizePredictions
 
 config_flags.DEFINE_config_file("config", "configs/main.py")
 
@@ -49,6 +50,16 @@ def get_callbacks(config, checkpoint_filepath, val_path, train_path):
     if FLAGS.artifact_dir:
         log_dir = os.path.join(FLAGS.artifact_dir, "logs")
         callbacks += [tf.keras.callbacks.TensorBoard(log_dir=log_dir)]
+
+        train_image, train_labels, train_category = load_n_images(
+            config, train_path, min_boxes_per_image=5, n=1
+        )
+        train_labels = keras_cv.bounding_box.convert_format(train_labels, source='rel_yxyx', target='xywh', images=train_image)
+        vis_callback_train = VisualizePredictions(
+            'xywh',
+            train_image, train_labels, FLAGS.artifact_dir, "train"
+        )
+        callbacks += [vis_callback_train]
 
     if FLAGS.wandb:
         callbacks += [wandb.keras.WandbCallback()]
