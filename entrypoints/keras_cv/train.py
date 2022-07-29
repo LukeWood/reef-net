@@ -154,10 +154,6 @@ train_ds = prepare_dataset(
     batch_size=config.batch_size,
 )
 
-for images, boxes in train_ds.take(5):
-    print(boxes)
-    input()
-
 ########## ---------- XXXXXXXXXX ---------- ##########
 # Load validation data
 val_path = os.path.abspath(os.path.join(base_path, config.val_path))
