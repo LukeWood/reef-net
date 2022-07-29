@@ -9,6 +9,7 @@ from reef_net.preprocessing import resize_and_pad_image
 
 import keras_cv
 
+
 def prepare_image(image):
     image, _, ratio = resize_and_pad_image(image, jitter=None)
     return tf.expand_dims(image, axis=0), ratio
@@ -28,7 +29,9 @@ def visualize_detections(
     """Visualize Detections"""
 
     image = np.array(image, dtype=np.uint8)
-    boxes = keras_cv.bounding_box.convert_format(boxes, source=bounding_box_format, target='xyxy', images=image)
+    boxes = keras_cv.bounding_box.convert_format(
+        boxes, source=bounding_box_format, target="xyxy", images=image
+    )
     plt.figure(figsize=figsize, frameon=False)
     plt.axis("off")
     plt.imshow(image)
@@ -66,7 +69,15 @@ class VisualizePredictions(keras.callbacks.Callback):
         subdir_name: subdirectory to store images in
     """
 
-    def __init__(self, bounding_box_format, test_image, test_boxes, artifact_dir, subdir_name, **kwargs):
+    def __init__(
+        self,
+        bounding_box_format,
+        test_image,
+        test_boxes,
+        artifact_dir,
+        subdir_name,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.bounding_box_format = bounding_box_format
         self.test_image = test_image
@@ -81,7 +92,12 @@ class VisualizePredictions(keras.callbacks.Callback):
         scores = [None] * test_boxes.shape[0]
 
         visualize_detections(
-            bounding_box_format, test_image, test_boxes, class_names, scores, self.dir_path + "/ground_truth.png"
+            bounding_box_format,
+            test_image,
+            test_boxes,
+            class_names,
+            scores,
+            self.dir_path + "/ground_truth.png",
         )
 
     @property
@@ -91,14 +107,23 @@ class VisualizePredictions(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         test_image = self.test_image
         input_image, ratio = prepare_image(test_image)
-        detections = self.model(input_image)['inference']
-        num_detections = detections.valid_detections[0]
-        class_names = ["COTS" for x in detections.nmsed_classes[0][:num_detections]]
+        detections = self.model(input_image)["inference"]
+
+        print('detections.shape before', detections.shape)
+        detections = detections[0]
+        print('detections.shape after', detections.shape)
+        num_detections = detections.shape[0]
+        print('num_detections', num_detections)
+
+        if num_detections == 0:
+            print('num_detections was 0, not logging inference')
+            return
+        class_names = ["COTS" for x in range(num_detections)]
         visualize_detections(
             self.bounding_box_format,
             test_image,
-            detections.nmsed_boxes[0][:num_detections] / ratio,
+            detections[:4] / ratio,
             class_names,
-            detections.nmsed_scores[0][:num_detections],
+            detections[5],
             f"{self.dir_path}/{epoch}.png",
         )
