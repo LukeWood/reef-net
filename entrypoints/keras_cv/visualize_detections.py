@@ -80,22 +80,8 @@ class VisualizePredictions(keras.callbacks.Callback):
         class_names = ["COTS"] * test_boxes.shape[0]
         scores = [None] * test_boxes.shape[0]
 
-        width, height = test_image.shape[1], test_image.shape[0]
-        # bbox is normalized corners formay in [y, x, y2, x2]/img_size
-
-        #
-        # bbox = test_boxes.numpy()
-        # bbox[:, 0] *= height
-        # bbox[:, 1] *= width
-        # bbox[:, 2] *= height
-        # bbox[:, 3] *= width
-
-        bbox = swap_xy(bbox)
-
-        # ends in xyxy
-
         visualize_detections(
-            bounding_box_format, est_image, bbox, class_names, scores, self.dir_path + "/ground_truth.png"
+            bounding_box_format, test_image, bbox, class_names, scores, self.dir_path + "/ground_truth.png"
         )
 
     @property

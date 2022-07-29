@@ -62,7 +62,7 @@ def get_callbacks(config, checkpoint_filepath, val_path, train_path):
         callbacks += [vis_callback_train]
 
     if FLAGS.wandb:
-        callbacks += [wandb.keras.WandbCallback()]
+        callbacks += [wandb.keras.WandbCallback(save_model=False)]
 
     return callbacks
 
