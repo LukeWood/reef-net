@@ -54,10 +54,11 @@ def get_callbacks(config, checkpoint_filepath, val_path, train_path):
         train_image, train_labels, train_category = load_n_images(
             config, train_path, min_boxes_per_image=5, n=1
         )
-        train_labels = keras_cv.bounding_box.convert_format(train_labels, source='rel_yxyx', target='xywh', images=train_image)
+        train_labels = keras_cv.bounding_box.convert_format(
+            train_labels, source="rel_yxyx", target="xywh", images=train_image
+        )
         vis_callback_train = VisualizePredictions(
-            'xywh',
-            train_image, train_labels, FLAGS.artifact_dir, "train"
+            "xywh", train_image, train_labels, FLAGS.artifact_dir, "train"
         )
         callbacks += [vis_callback_train]
 
@@ -182,7 +183,9 @@ with strategy.scope():
         boundaries=learning_rate_boundaries, values=learning_rates
     )
 
-    optimizer = tf.optimizers.SGD(learning_rate=learning_rate_fn, momentum=0.9)
+    optimizer = tf.optimizers.SGD(
+        learning_rate=learning_rate_fn, momentum=0.9, global_clipnorm=10.0
+    )
     model.compile(
         optimizer=optimizer,
         loss=RetinaNetLoss(num_classes=2),
