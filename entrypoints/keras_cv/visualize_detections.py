@@ -28,7 +28,7 @@ def visualize_detections(
     """Visualize Detections"""
 
     image = np.array(image, dtype=np.uint8)
-    boxes = keras_cv.bounding_box.transform_format(boxes, source=bounding_box_format, target='xyxy', images=image)
+    boxes = keras_cv.bounding_box.convert_format(boxes, source=bounding_box_format, target='xyxy', images=image)
     plt.figure(figsize=figsize, frameon=False)
     plt.axis("off")
     plt.imshow(image)
@@ -81,7 +81,7 @@ class VisualizePredictions(keras.callbacks.Callback):
         scores = [None] * test_boxes.shape[0]
 
         visualize_detections(
-            bounding_box_format, test_image, bbox, class_names, scores, self.dir_path + "/ground_truth.png"
+            bounding_box_format, test_image, test_boxes, class_names, scores, self.dir_path + "/ground_truth.png"
         )
 
     @property
