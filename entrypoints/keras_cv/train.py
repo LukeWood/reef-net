@@ -49,19 +49,6 @@ def get_callbacks(config, checkpoint_filepath, val_path, train_path):
     if FLAGS.artifact_dir:
         log_dir = os.path.join(FLAGS.artifact_dir, "logs")
         callbacks += [tf.keras.callbacks.TensorBoard(log_dir=log_dir)]
-        val_image, val_labels, val_category = load_n_images(
-            config, val_path, min_boxes_per_image=5, n=1
-        )
-        vis_callback = VisualizePredictions(
-            val_image, val_labels, FLAGS.artifact_dir, "test"
-        )
-        train_image, train_labels, train_category = load_n_images(
-            config, train_path, min_boxes_per_image=5, n=1
-        )
-        vis_callback_train = VisualizePredictions(
-            val_image, val_labels, FLAGS.artifact_dir, "train"
-        )
-        callbacks += [vis_callback_train, vis_callback]
 
     if FLAGS.wandb:
         callbacks += [wandb.keras.WandbCallback()]
