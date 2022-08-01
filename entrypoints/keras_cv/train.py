@@ -29,6 +29,8 @@ flags.DEFINE_string("artifact_dir", None, "Directory to store artifacts")
 flags.DEFINE_string("model_dir", None, "Where to save the model after training")
 flags.DEFINE_string("experiment_name", None, "wandb experiment name")
 
+flags.DEFINE_integer("batch_size", 8, "batch size to use")
+
 FLAGS = flags.FLAGS
 FLAGS(sys.argv)
 
@@ -152,7 +154,7 @@ train_ds, train_dataset_size = load_reef_dataset(
 train_ds = prepare_dataset(
     train_ds,
     train_preprocessing_function,
-    batch_size=config.batch_size,
+    batch_size=FLAGS.batch_size,
 )
 
 ########## ---------- XXXXXXXXXX ---------- ##########
@@ -160,7 +162,7 @@ train_ds = prepare_dataset(
 val_path = os.path.abspath(os.path.join(base_path, config.val_path))
 val_ds, val_dataset_size = load_reef_dataset(config, val_path, min_boxes_per_image=1)
 val_ds = prepare_dataset(
-    val_ds, eval_preprocessing_function, batch_size=config.batch_size
+    val_ds, eval_preprocessing_function, batch_size=FLAGS.batch_size
 )
 checkpoint_filepath = get_checkpoint_path()
 
@@ -215,10 +217,14 @@ with strategy.scope():
         steps_per_epoch = 1
         validation_steps = 1
 
+    print('train_ds.element_spec', train_ds.element_spec)
+    print('val_ds.element_spec', val_ds.element_spec)
+
     cbs = get_callbacks(config, checkpoint_filepath, val_path, train_path)
 
     ########## ---------- XXXXXXXXXX ---------- ##########
     # train
+
     model.fit(
         train_ds,
         validation_data=val_ds,
