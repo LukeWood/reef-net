@@ -122,8 +122,8 @@ class VisualizePredictions(keras.callbacks.Callback):
         visualize_detections(
             self.bounding_box_format,
             test_image,
-            detections[:4] / ratio,
+            detections[..., :4] / ratio,
             class_names,
-            detections[5],
+            detections[..., 5],
             f"{self.dir_path}/{epoch}.png",
         )
