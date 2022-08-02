@@ -29,7 +29,7 @@ flags.DEFINE_string("artifact_dir", None, "Directory to store artifacts")
 flags.DEFINE_string("model_dir", None, "Where to save the model after training")
 flags.DEFINE_string("experiment_name", None, "wandb experiment name")
 
-flags.DEFINE_integer("batch_size", 8, "batch size to use")
+flags.DEFINE_integer("batch_size", 2, "batch size to use")
 
 FLAGS = flags.FLAGS
 FLAGS(sys.argv)

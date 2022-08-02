@@ -42,7 +42,7 @@ def visualize_detections(
             text = "{}: {:.2f}".format(_cls, score)
         else:
             text = "{}".format(_cls)
-        x1, y1, x2, y2 = box
+        x1, y1, x2, y2 = box[:4]
         w, h = x2 - x1, y2 - y1
         patch = plt.Rectangle(
             [x1, y1], w, h, fill=False, edgecolor=color, linewidth=linewidth
