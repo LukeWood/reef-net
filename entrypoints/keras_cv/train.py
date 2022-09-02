@@ -8,7 +8,7 @@ import wandb
 from absl import app
 from absl import flags
 from absl import logging
-from loss import RetinaNetLoss
+from loss import RetinaNetClassificationLoss, RetinaNetBoxLoss
 from ml_collections.config_flags import config_flags
 
 from reef_net.loaders import load_n_images
@@ -171,12 +171,13 @@ checkpoint_filepath = get_checkpoint_path()
 strategy = tf.distribute.MirroredStrategy()
 
 with strategy.scope():
-    model = keras_cv.applications.RetinaNet(
-        num_classes=2,
+    model = keras_cv.models.RetinaNet(
+        classes=1,
         bounding_box_format="xywh",
         backbone="resnet50",
         backbone_weights="imagenet",
         include_rescaling=True,
+        evaluate_train_time_metrics=True
     )
 
     learning_rates = [2.5e-06, 0.000625, 0.00125, 0.0025, 0.00025, 2.5e-05]
@@ -190,7 +191,8 @@ with strategy.scope():
     )
     model.compile(
         optimizer=optimizer,
-        loss=RetinaNetLoss(num_classes=2),
+        classification_loss=RetinaNetClassificationLoss(),
+        box_loss=RetinaNetBoxLoss(),
         metrics=[
             keras_cv.metrics.COCOMeanAveragePrecision(
                 class_ids=range(1),

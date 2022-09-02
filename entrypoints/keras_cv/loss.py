@@ -60,7 +60,7 @@ class RetinaNetLoss(tf.keras.losses.Loss):
 class RetinaNetBoxLoss(tf.keras.losses.Loss):
     """Implements Smooth L1 loss"""
 
-    def __init__(self, delta, name="RetinaNetBoxLoss", reduction="none", **kwargs):
+    def __init__(self, delta=1.0, name="RetinaNetBoxLoss", reduction="none", **kwargs):
         super().__init__(reduction=reduction, name=name)
         self._delta = delta
 
@@ -80,7 +80,7 @@ class RetinaNetClassificationLoss(tf.keras.losses.Loss):
     """Implements Focal loss"""
 
     def __init__(
-        self, alpha, gamma, reduction="none", name="RetinaNetClassificationLoss"
+        self, alpha=0.25, gamma=2.0, reduction="none", name="RetinaNetClassificationLoss"
     ):
         super().__init__(reduction=reduction, name=name)
         self._alpha = alpha
