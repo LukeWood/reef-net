@@ -107,13 +107,10 @@ class VisualizePredictions(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         test_image = self.test_image
         input_image, ratio = prepare_image(test_image)
-        detections = self.model(input_image)["inference"]
+        detections = self.model.predict(input_image)
 
-        print('detections.shape before', detections.shape)
         detections = detections[0]
-        print('detections.shape after', detections.shape)
         num_detections = detections.shape[0]
-        print('num_detections', num_detections)
 
         if num_detections == 0:
             print('num_detections was 0, not logging inference')
